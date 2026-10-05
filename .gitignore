@@ -1,6 +1,20 @@
+# .NET
 bin/
 obj/
 .vs/
-artifacts/
 *.user
 samples/DotNetSchema.Sample.Host/schemas/
+
+# Additional build artifacts
+artifacts/
+
+# OS garbage
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*:Zone.Identifier
+.DS_Store
+
+# Explicitly omitted files
+*.gitignore.*
+*.gitignore/
