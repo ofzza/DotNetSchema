@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <!--
+    The host owns the documents. It opts in, and every build regenerates them from its own assembly and
+    from every project it references (here, DotNetSchema.Sample.Models).
+  -->
+  <PropertyGroup>
+    <DotNetSchemaGenerate>true</DotNetSchemaGenerate>
+    <!-- Optional: write into the source tree instead of $(OutDir). Relative to this project. -->
+    <DotNetSchemaOutputPath>schemas</DotNetSchemaOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DotNetSchema.Sample.Models\DotNetSchema.Sample.Models.csproj" />
+  </ItemGroup>
+
+  <!--
+    In-repository wiring only. Outside this repository the package reaches the host transitively through
+    the models library (or by a PackageReference of its own), and this Import is not needed.
+  -->
+  <Import Project="..\..\src\DotNetSchema\buildTransitive\DotNetSchema.targets" />
+
+</Project>

@@ -1,0 +1,76 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <!--
+    This project is the package. Consumers inside this repository reference it as a project and import
+    buildTransitive/DotNetSchema.targets by hand; consumers outside it restore the package, which
+    imports the same file automatically. See README.md.
+  -->
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>DotNetSchema</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>ofzza</Authors>
+    <Description>Exports [DotNetSchema]-marked data models to JSON Schema (Draft 2020-12) on build.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <!--
+    Update rather than Include: the SDK's default None glob already matches these, and adding them a
+    second time trips NETSDK1022. buildTransitive/ rather than build/ is deliberate: a model library
+    references the package for the attribute, and the host application that references that library
+    receives the build integration through it. Nothing is exported anywhere until a project sets
+    DotNetSchemaGenerate=true, so inheriting the targets is harmless for projects that do not opt in.
+  -->
+  <ItemGroup>
+    <!-- A full destination path, not a directory. A PackagePath ending in a separator appends the file's
+         path relative to the project, which for these would land them at buildTransitive/buildTransitive/. -->
+    <None Update="buildTransitive\DotNetSchema.props"
+          Pack="true"
+          PackagePath="buildTransitive\DotNetSchema.props" />
+    <None Update="buildTransitive\DotNetSchema.targets"
+          Pack="true"
+          PackagePath="buildTransitive\DotNetSchema.targets" />
+    <None Update="README.md" Pack="true" PackagePath="README.md" />
+    <None Include="..\..\LICENSE.md" Pack="true" PackagePath="LICENSE.md" Visible="false" />
+  </ItemGroup>
+
+  <!--
+    Ship the export tool inside the package, pre-built.
+
+    It has to be the PUBLISH output, not the build output: tools/ is not a restore target, so nothing
+    resolves the tool's own dependencies for it and System.Reflection.MetadataLoadContext.dll has to be
+    sitting there physically. Packing it here also means a consumer's build never has to build anything of
+    ours, which is what keeps the package path free of the project-graph machinery the in-repository path
+    needs.
+  -->
+  <PropertyGroup>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_PackDotNetSchemaTool</TargetsForTfmSpecificContentInPackage>
+  </PropertyGroup>
+
+  <Target Name="_PackDotNetSchemaTool">
+    <PropertyGroup>
+      <_DotNetSchemaToolPublishDir>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(BaseIntermediateOutputPath)', 'tool-publish'))</_DotNetSchemaToolPublishDir>
+    </PropertyGroup>
+
+    <MSBuild Projects="..\DotNetSchema.Tool\DotNetSchema.Tool.csproj"
+             Targets="Publish"
+             Properties="Configuration=$(Configuration);TargetFramework=$(TargetFramework);PublishDir=$(_DotNetSchemaToolPublishDir)" />
+
+    <!-- Contributed through TargetsForTfmSpecificContentInPackage rather than as None items: by the time
+         a target could add None items, pack has already gathered the ones it is going to use. -->
+    <ItemGroup>
+      <_DotNetSchemaToolFile Include="$(_DotNetSchemaToolPublishDir)**\*" />
+      <TfmSpecificPackageFile Include="@(_DotNetSchemaToolFile)">
+        <PackagePath>tools/net10.0/any/%(RecursiveDir)%(Filename)%(Extension)</PackagePath>
+      </TfmSpecificPackageFile>
+    </ItemGroup>
+  </Target>
+
+</Project>

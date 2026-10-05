@@ -1,0 +1,241 @@
+<Project>
+
+  <!--
+    DotNetSchema - build integration.
+
+    Reached two ways, and they differ in exactly one thing: where the export tool comes from.
+
+      * From the NuGet package, imported automatically by restore - into the project that references
+        the package and, because it ships under buildTransitive/, into every project above it. The tool
+        ships pre-built under tools/, so nothing needs building and nothing is injected into the
+        consumer's project graph.
+
+      * From inside this repository, imported by hand from the consumer's csproj, next to a
+        ProjectReference to DotNetSchema. There is no packaged tool, so a build-only
+        ProjectReference to the tool project is added instead.
+
+    That the injection only happens on the second path matters more than it looks: a hand-written Import
+    sits in the csproj body, before the SDK's own targets, which is early enough for a ProjectReference
+    to reach restore. The package path is imported long after that point and could not inject anything -
+    but it has no need to.
+
+    Either way nothing runs unless the project sets DotNetSchemaGenerate to true: model libraries carry
+    the attribute, and the host project that should own the documents opts in.
+
+    Everything derived from an SDK-computed value ($(OutDir), $(IntermediateOutputPath),
+    $(DOTNET_HOST_PATH)) is worked out inside the prepare target rather than here, because on the
+    in-repository path none of them exist yet at import time.
+  -->
+
+  <Import Project="$(MSBuildThisFileDirectory)DotNetSchema.props"
+          Condition="'$(DotNetSchemaPropsImported)' != 'true'" />
+
+  <PropertyGroup>
+    <_DotNetSchemaPackagedTool>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'tools', 'net10.0', 'any', 'DotNetSchema.Tool.dll'))</_DotNetSchemaPackagedTool>
+
+    <_DotNetSchemaRepoMode Condition="'$(DotNetSchemaToolPath)' == '' And !Exists('$(_DotNetSchemaPackagedTool)')">true</_DotNetSchemaRepoMode>
+
+    <DotNetSchemaToolProject Condition="'$(DotNetSchemaToolProject)' == ''">$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', 'DotNetSchema.Tool', 'DotNetSchema.Tool.csproj'))</DotNetSchemaToolProject>
+
+    <_DotNetSchemaActive Condition="'$(DotNetSchemaGenerate)' == 'true'">true</_DotNetSchemaActive>
+  </PropertyGroup>
+
+  <!--
+    Build the tool as part of this project's build, on the in-repository path only.
+
+    A ProjectReference rather than an <MSBuild/> call inside a target, for three reasons in order of
+    importance. It is the only form that puts the tool into this project's RESTORE graph, so building a
+    single consumer csproj on its own does not fail with NETSDK1004 when the inner build finds no
+    project.assets.json. It participates in the project graph, so the tool is built once per session and
+    ordered correctly under -m. And the tool project's own incrementality then handles "do not rebuild
+    needlessly" with nothing further from us.
+
+    ReferenceOutputAssembly keeps it off the compile line; that is an MSBuild concept and does not by
+    itself stop NuGet assets flowing, which is what ExcludeAssets and PrivateAssets are for. Without
+    them the tool's System.Reflection.MetadataLoadContext dependency would land in the consumer's bin.
+  -->
+  <ItemGroup Condition="'$(_DotNetSchemaActive)' == 'true' And '$(_DotNetSchemaRepoMode)' == 'true'">
+    <ProjectReference Include="$(DotNetSchemaToolProject)"
+                      ReferenceOutputAssembly="false"
+                      SkipGetTargetFrameworkProperties="true"
+                      ExcludeAssets="all"
+                      PrivateAssets="all"
+                      Private="false"
+                      OutputItemType="_DotNetSchemaToolBuildOutput" />
+  </ItemGroup>
+
+  <!--
+    Prepare - always runs, deliberately without Inputs/Outputs.
+
+    Three jobs, every one of which has to happen even when the export itself is up to date:
+
+      1. work out the paths, and locate the tool;
+      2. write the response file, which is an INPUT to the export target below;
+      3. read the manifest back, so that the previously produced documents can be declared as Outputs
+         and re-registered as FileWrites.
+
+    Note what this target is NOT guarded by. BuildingProject is false during a no-build publish, where the
+    manifest still has to be read so the documents an earlier build produced reach $(PublishDir); that
+    guard therefore belongs on the export target, which actually runs the tool, and not on this one. This
+    target is only ever reached through DependsOnTargets, and neither of its callers runs at design time.
+
+    Point 3 is not housekeeping. IncrementalClean deletes any file under $(OutDir) that appeared in the
+    previous build's FileWrites and not in this one's. Read the manifest inside the incremental target
+    and an up-to-date second build skips it, reports no FileWrites, and has its schema files deleted -
+    produced by build one, silently removed by build two. Reading it here also means a hand-deleted
+    document appears in Outputs, is seen to be missing, and comes back on the next build.
+  -->
+  <Target Name="_DotNetSchemaPrepare"
+          DependsOnTargets="ResolveReferences"
+          Condition="'$(_DotNetSchemaActive)' == 'true' And '$(DesignTimeBuild)' != 'true'">
+
+    <PropertyGroup>
+      <DotNetSchemaOutputPath Condition="'$(DotNetSchemaOutputPath)' == ''">$(OutDir)</DotNetSchemaOutputPath>
+      <DotNetSchemaDefaultFileName Condition="'$(DotNetSchemaDefaultFileName)' == ''">$(AssemblyName).schema.json</DotNetSchemaDefaultFileName>
+      <_DotNetSchemaOutputDirectory>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(DotNetSchemaOutputPath)'))</_DotNetSchemaOutputDirectory>
+
+      <_DotNetSchemaStateDirectory>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'DotNetSchema'))</_DotNetSchemaStateDirectory>
+      <_DotNetSchemaManifest>$(_DotNetSchemaStateDirectory)outputs.txt</_DotNetSchemaManifest>
+      <_DotNetSchemaResponseFile>$(_DotNetSchemaStateDirectory)export.rsp</_DotNetSchemaResponseFile>
+
+      <_DotNetSchemaHost Condition="'$(DOTNET_HOST_PATH)' != ''">$(DOTNET_HOST_PATH)</_DotNetSchemaHost>
+      <_DotNetSchemaHost Condition="'$(_DotNetSchemaHost)' == ''">dotnet</_DotNetSchemaHost>
+
+      <_DotNetSchemaToolPath>$(DotNetSchemaToolPath)</_DotNetSchemaToolPath>
+      <_DotNetSchemaToolPath Condition="'$(_DotNetSchemaToolPath)' == '' And '$(_DotNetSchemaRepoMode)' != 'true'">$(_DotNetSchemaPackagedTool)</_DotNetSchemaToolPath>
+      <_DotNetSchemaToolPath Condition="'$(_DotNetSchemaToolPath)' == ''">@(_DotNetSchemaToolBuildOutput->WithMetadataValue('Extension', '.dll')->'%(FullPath)')</_DotNetSchemaToolPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!-- This project's own compiler output, rather than the copy in $(OutDir): it is the authoritative
+           product of the compile, and its timestamp is the right incremental input. -->
+      <_DotNetSchemaScan Include="@(IntermediateAssembly)" />
+
+      <!-- Every project reference, direct and transitive. RAR stamps ReferenceSourceTarget onto the
+           @(ReferencePath) entries that came from a ProjectReference, and by the time ResolveReferences
+           has run the SDK has already folded the transitive closure into @(ProjectReference). -->
+      <_DotNetSchemaScan Include="@(ReferencePath->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))"
+                             Condition="'$(DotNetSchemaScanProjectReferences)' == 'true'" />
+
+      <!-- Never scan this feature's own assemblies. -->
+      <_DotNetSchemaScan Remove="@(_DotNetSchemaScan->WithMetadataValue('Filename', 'DotNetSchema'))" />
+
+      <!-- The closure the metadata-only load needs in order to resolve what the scanned assemblies
+           mention. @(ReferencePath) already carries the Microsoft.NETCore.App.Ref targeting pack,
+           System.Runtime.dll among it, which is the core assembly the load context is anchored to.
+
+           NOT @(ReferencePathWithRefAssemblies): for project references that substitutes obj/.../ref/X.dll,
+           which would offer the resolver a second file carrying the same assembly identity as the
+           implementation assembly being scanned, and it refuses that. -->
+      <_DotNetSchemaResolve Include="@(ReferencePath)" />
+      <_DotNetSchemaResolve Include="@(ReferenceDependencyPaths)" />
+      <_DotNetSchemaResolve Include="@(IntermediateAssembly)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_DotNetSchemaArgument Include="--output-directory=$(_DotNetSchemaOutputDirectory)" />
+      <_DotNetSchemaArgument Include="--default-file-name=$(DotNetSchemaDefaultFileName)" />
+      <_DotNetSchemaArgument Include="--manifest=$(_DotNetSchemaManifest)" />
+      <_DotNetSchemaArgument Include="--fail-on-empty=$(DotNetSchemaFailOnEmpty)" />
+      <_DotNetSchemaArgument Include="@(_DotNetSchemaScan->'--scan=%(FullPath)')" />
+      <_DotNetSchemaArgument Include="@(_DotNetSchemaResolve->'--reference=%(FullPath)')" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(_DotNetSchemaStateDirectory)" />
+
+    <!-- One argument per line: no quoting, no shell, and no command-line length limit to run into - a
+         full framework closure is well over a hundred paths. WriteOnlyWhenDifferent is required rather
+         than tidy, because this file is an Input to the target below and its timestamp must move only
+         when the arguments genuinely change. -->
+    <WriteLinesToFile File="$(_DotNetSchemaResponseFile)"
+                      Lines="@(_DotNetSchemaArgument)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+
+    <ReadLinesFromFile File="$(_DotNetSchemaManifest)" Condition="Exists('$(_DotNetSchemaManifest)')">
+      <Output TaskParameter="Lines" ItemName="DotNetSchemaOutput" />
+    </ReadLinesFromFile>
+
+    <ItemGroup>
+      <FileWrites Include="$(_DotNetSchemaManifest)" />
+      <FileWrites Include="$(_DotNetSchemaResponseFile)" />
+      <FileWrites Include="@(DotNetSchemaOutput)" />
+    </ItemGroup>
+
+  </Target>
+
+  <!--
+    Export.
+
+    AfterTargets="CopyFilesToOutputDirectory" rather than "Build", and the first reason is the decisive
+    one. PrepareForRunDependsOn is exactly CopyFilesToOutputDirectory, and CoreBuildDependsOn runs
+    PrepareForRun before IncrementalClean - so hooking here puts the export inside CoreBuild and ahead of
+    IncrementalClean, which is what makes the FileWrites registered above count in this build rather than
+    one build too late. It also means the assembly exists, and that Build, Rebuild, dotnet test and
+    dotnet publish all reach it without being hooked separately.
+
+    A design-time build never calls CopyFilesToOutputDirectory, so the IDE will not run the tool; the
+    explicit guards are insurance against a project system that runs an unusual subset of targets.
+  -->
+  <Target Name="DotNetSchema"
+          AfterTargets="CopyFilesToOutputDirectory"
+          DependsOnTargets="_DotNetSchemaPrepare"
+          Condition="'$(_DotNetSchemaActive)' == 'true'
+                     And '$(DesignTimeBuild)' != 'true'
+                     And '$(BuildingProject)' == 'true'"
+          Inputs="$(MSBuildThisFileFullPath);$(_DotNetSchemaResponseFile);@(IntermediateAssembly);@(_DotNetSchemaScan)"
+          Outputs="$(_DotNetSchemaManifest);@(DotNetSchemaOutput)">
+
+    <Error Condition="'$(_DotNetSchemaToolPath)' == ''"
+           Code="DNS1001"
+           Text="DotNetSchema: the export tool could not be located. Set DotNetSchemaToolPath to a prebuilt tool, or set DotNetSchemaGenerate to false." />
+
+    <MakeDir Directories="$(_DotNetSchemaOutputDirectory)" />
+
+    <!-- Exec parses MSBuild's canonical diagnostic format out of tool output by default, so the codes the
+         tool prints arrive as real build errors and warnings with no logger of our own. -->
+    <Exec Command="&quot;$(_DotNetSchemaHost)&quot; exec &quot;$(_DotNetSchemaToolPath)&quot; &quot;@$(_DotNetSchemaResponseFile)&quot;"
+          WorkingDirectory="$(MSBuildProjectDirectory)"
+          StandardOutputImportance="normal"
+          StandardErrorImportance="high" />
+
+    <!-- The run may have added or removed documents; take the list again from the manifest it just wrote. -->
+    <ItemGroup>
+      <DotNetSchemaOutput Remove="@(DotNetSchemaOutput)" />
+    </ItemGroup>
+
+    <ReadLinesFromFile File="$(_DotNetSchemaManifest)" Condition="Exists('$(_DotNetSchemaManifest)')">
+      <Output TaskParameter="Lines" ItemName="DotNetSchemaOutput" />
+    </ReadLinesFromFile>
+
+    <ItemGroup>
+      <FileWrites Include="@(DotNetSchemaOutput)" />
+    </ItemGroup>
+
+  </Target>
+
+  <!--
+    Publish. $(OutDir) is not $(PublishDir), and AssignTargetPaths has long since run by this point, so
+    None items would be ignored; the publish list has to be contributed to directly. DependsOnTargets is
+    what makes a no-build publish work: CopyFilesToOutputDirectory never runs there, but
+    ResolveReferences does, so the prepare target can still read the manifest an earlier build left.
+  -->
+  <Target Name="_DotNetSchemaAddToPublishList"
+          AfterTargets="ComputeResolvedFilesToPublishList"
+          DependsOnTargets="_DotNetSchemaPrepare"
+          Condition="'$(_DotNetSchemaActive)' == 'true'
+                     And '$(DotNetSchemaIncludeInPublish)' == 'true'
+                     And '$(DesignTimeBuild)' != 'true'">
+    <!-- The emptiness check belongs on the ItemGroup, not on the target: MSBuild evaluates a target's
+         Condition before running its DependsOnTargets, so up there the item is always empty on the
+         no-build path, where the prepare target is the only thing that would have filled it. -->
+    <ItemGroup Condition="'@(DotNetSchemaOutput)' != ''">
+      <ResolvedFileToPublish Include="@(DotNetSchemaOutput)">
+        <RelativePath>%(Filename)%(Extension)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
+
+</Project>

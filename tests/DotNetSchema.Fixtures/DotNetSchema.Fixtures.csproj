@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DotNetSchema\DotNetSchema.csproj" />
+  </ItemGroup>
+
+  <!-- Exports the [DotNetSchema]-marked records to JSON Schema on every build, which keeps the in-repository
+       build integration exercised end to end. Imported by hand because MSBuild only auto-imports a
+       package's build targets for a PackageReference, never for a ProjectReference; see that project's
+       README for the two ways in. -->
+  <PropertyGroup>
+    <DotNetSchemaGenerate>true</DotNetSchemaGenerate>
+    <!-- Matches SchemaGenerationOptions.Default, so the documents in bin/ are byte for byte the ones the
+         generator tests pin by digest. -->
+    <DotNetSchemaDefaultFileName>schema.json</DotNetSchemaDefaultFileName>
+  </PropertyGroup>
+
+  <Import Project="..\..\src\DotNetSchema\buildTransitive\DotNetSchema.targets" />
+
+</Project>

@@ -1,0 +1,53 @@
+<Project>
+
+  <!--
+    DotNetSchema - consumer-facing defaults.
+
+    Everything a consumer csproj is allowed to override belongs here, and every default carries a
+    Condition. That is not decoration: this file is imported before the csproj body when the package
+    supplies it, but after the csproj body when the sibling .targets pulls it in for an in-repository
+    consumer. An unconditional default would win over a csproj setting in the second case.
+
+    Values that depend on something the SDK computes later are not here at all; they are worked out
+    inside the targets, where both delivery paths agree on them.
+  -->
+
+  <PropertyGroup>
+    <DotNetSchemaPropsImported>true</DotNetSchemaPropsImported>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!--
+      Opt-in switch. Off by default, because these targets flow transitively: a model library references
+      the package for the attribute, and only the host project that should produce the documents sets
+      this to true. That project scans its own assembly and, by default, every project it references.
+    -->
+    <DotNetSchemaGenerate Condition="'$(DotNetSchemaGenerate)' == ''">false</DotNetSchemaGenerate>
+
+    <!--
+      Document that [DotNetSchema] used without an argument exports to. Deliberately left empty here: it
+      defaults to $(AssemblyName).schema.json, and $(AssemblyName) is not settled yet on the package path.
+    -->
+    <DotNetSchemaDefaultFileName Condition="'$(DotNetSchemaDefaultFileName)' == ''"></DotNetSchemaDefaultFileName>
+
+    <!-- Also scan the transitive project-reference closure, not only this project's own assembly. -->
+    <DotNetSchemaScanProjectReferences Condition="'$(DotNetSchemaScanProjectReferences)' == ''">true</DotNetSchemaScanProjectReferences>
+
+    <!-- Copy the produced documents into $(PublishDir) as well as $(OutDir). -->
+    <DotNetSchemaIncludeInPublish Condition="'$(DotNetSchemaIncludeInPublish)' == ''">true</DotNetSchemaIncludeInPublish>
+
+    <!-- Fail the build when the integration is switched on but nothing is marked. Useful in CI. -->
+    <DotNetSchemaFailOnEmpty Condition="'$(DotNetSchemaFailOnEmpty)' == ''">false</DotNetSchemaFailOnEmpty>
+
+    <!--
+      Directory the documents are written to; a relative path is resolved against the project directory.
+      Deliberately left empty here: it defaults to $(OutDir), which the SDK has not computed yet at this
+      point in either delivery path.
+    -->
+    <DotNetSchemaOutputPath Condition="'$(DotNetSchemaOutputPath)' == ''"></DotNetSchemaOutputPath>
+
+    <!-- Escape hatch: point at a prebuilt tool and both of the lookups below are skipped. -->
+    <DotNetSchemaToolPath Condition="'$(DotNetSchemaToolPath)' == ''"></DotNetSchemaToolPath>
+  </PropertyGroup>
+
+</Project>

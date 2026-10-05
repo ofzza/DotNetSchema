@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/DotNetSchema/DotNetSchema.csproj" />
+    <Project Path="src/DotNetSchema.Generator/DotNetSchema.Generator.csproj" />
+    <Project Path="src/DotNetSchema.Tool/DotNetSchema.Tool.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/DotNetSchema.Fixtures/DotNetSchema.Fixtures.csproj" />
+    <Project Path="tests/DotNetSchema.Generator.Tests/DotNetSchema.Generator.Tests.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/DotNetSchema.Sample.Host/DotNetSchema.Sample.Host.csproj" />
+    <Project Path="samples/DotNetSchema.Sample.Models/DotNetSchema.Sample.Models.csproj" />
+  </Folder>
+</Solution>

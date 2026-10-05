@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <!-- Referenced only to derive the marker attribute's full name from typeof(...).FullName rather than
+       from a hand-copied string. Types read through a MetadataLoadContext are never reference-equal to
+       runtime types, so the match is by name either way; this keeps the name from drifting. -->
+  <ItemGroup>
+    <ProjectReference Include="..\DotNetSchema\DotNetSchema.csproj" />
+  </ItemGroup>
+
+</Project>
