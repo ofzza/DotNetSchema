@@ -21,6 +21,7 @@ Concrete triggers:
 | adds or changes a fixture model                                                | `tests/DotNetSchema.Fixtures/README.md` (Coverage, Pseudocode, Graph, Schema export tables), and the golden digests                                     |
 | changes a build, test or pack command, the CI workflow, the TFM or the SDK      | [Commands](#commands) / [Continuous integration](#continuous-integration) below, and the root `README.md`                                               |
 | bumps the package version                                                      | `<Version>` in `src/DotNetSchema/DotNetSchema.csproj` **and** every `Version="0.1.0"` snippet: root `README.md`, `src/DotNetSchema/README.md`, the comment in `samples/DotNetSchema.Sample.Models/DotNetSchema.Sample.Models.csproj` |
+| changes packaging, the package contents, the release process or the publish target | `PUBLISH.md` (checklists, content list, smoke test, steps)                                                                                             |
 | establishes a new convention, or hits a new gotcha                             | [Code style](#code-style) / [Gotchas and known issues](#gotchas-and-known-issues)                                                                       |
 | resolves one of the known issues listed below                                  | remove it from [Gotchas and known issues](#gotchas-and-known-issues)                                                                                    |
 
@@ -62,6 +63,7 @@ tests/
   DotNetSchema.Generator.Tests/  JsonSchemaGeneratorTests.<Contract>.cs partials, JsonSchemaValidator, SchemaDigest
 samples/                   Models library + Host app; Host writes into samples/DotNetSchema.Sample.Host/schemas/ (gitignored)
 scripts/pack.sh            Packs the package into artifacts/packages
+PUBLISH.md                 Release checklists and the steps to pack and push a version to nuget.org
 artifacts/                 Pack output, gitignored
 .github/                   CI workflow, dependabot, pull request template
 ```
@@ -75,7 +77,8 @@ Each project's README has the file-level layout; keep it, not this tree, as the 
 - `./scripts/pack.sh [extra dotnet pack args, e.g. -p:Version=0.2.0]` — packs `src/DotNetSchema` in Release into `artifacts/packages`.
 - Regenerate golden digests (only after an *intended* output change): `dotnet build tests/DotNetSchema.Fixtures` then `sha256sum tests/DotNetSchema.Fixtures/bin/Debug/net10.0/{assessment,schema,school}.json`, and paste into `JsonSchemaGeneratorTests.Goldens.cs`.
 - Debug the tool by hand: `dotnet exec DotNetSchema.Tool.dll @obj/Debug/net10.0/DotNetSchema/export.rsp` from a consumer project directory.
-- **The ordinary build never exercises the packaged path.** Before a release, or after touching packaging or `buildTransitive/`, run the manual check in `src/DotNetSchema/README.md` "Releasing the package" (scratch library + host outside the repo, `nuget.config` pointing at `artifacts/packages`).
+- **The ordinary build never exercises the packaged path.** Before a release, or after touching packaging or `buildTransitive/`, run the consumer smoke test in `PUBLISH.md` (scratch library + host outside the repo, `nuget.config` pointing at `artifacts/packages`, private `NUGET_PACKAGES`).
+- **Releasing:** follow `PUBLISH.md` — checklists before the first and every publish, then version bump, tag, fast-forward `master`, pack and `dotnet nuget push`.
 
 ## Architecture rules that must not be broken
 
@@ -134,7 +137,7 @@ There is no `.editorconfig` in this repo; follow the surrounding code.
 - **A Web SDK host with an in-tree `DotNetSchemaOutputPath` must exclude that folder from `Content`**, or the documents are published twice.
 - **`System.Reflection.MetadataLoadContext`'s major version tracks the TFM.** Dependabot ignores its semver-major updates; bump it by hand together with the TFM, in both `DotNetSchema.Tool.csproj` and `DotNetSchema.Generator.Tests.csproj`.
 - **Models that reach the host as packages (not projects) are not scanned** — only the host's own assembly and its project-reference closure.
-- **Local-only files are not ignored.** `TODO.gitignore.md` follows the `*.gitignore*` local-only naming convention, but `.gitignore` has no such rule, so a blanket `git add` would commit it — stage files explicitly. An empty stray `DotNetSchema/` directory also sits at the repo root (git ignores empty directories).
+- **`*.gitignore.*` files and `*.gitignore/` directories are local-only** (e.g. `TODO.gitignore.md`) and ignored by `.gitignore` — never commit them. An empty stray `DotNetSchema/` directory sits at the repo root (git ignores empty directories).
 
 ## Continuous integration
 
