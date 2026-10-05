@@ -1,0 +1,22 @@
+version: 2
+
+updates:
+  # Package updates, grouped into a single pull request per week
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      dependencies:
+        patterns: ['*']
+    ignore:
+      # `System.Reflection.MetadataLoadContext` tracks the target framework (net10.0), so its major
+      # version is bumped by hand, together with the TFM
+      - dependency-name: System.Reflection.MetadataLoadContext
+        update-types: ['version-update:semver-major']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
