@@ -20,7 +20,7 @@ Concrete triggers:
 | adds, removes or renames a file, directory or project                          | the Layout block of that project's README, [Layout](#layout) below, the root `README.md` path table, and `DotNetSchema.slnx` for a project               |
 | adds or changes a fixture model                                                | `tests/DotNetSchema.Fixtures/README.md` (Coverage, Pseudocode, Graph, Schema export tables), and the golden digests                                     |
 | changes a build, test or pack command, the CI workflow, the TFM or the SDK      | [Commands](#commands) / [Continuous integration](#continuous-integration) below, and the root `README.md`                                               |
-| bumps the package version                                                      | `<Version>` in `src/DotNetSchema/DotNetSchema.csproj` **and** every `Version="0.1.0"` snippet: root `README.md`, `src/DotNetSchema/README.md`, the comment in `samples/DotNetSchema.Sample.Models/DotNetSchema.Sample.Models.csproj` |
+| bumps the package version                                                      | `<Version>` in `src/DotNetSchema/DotNetSchema.csproj` **and** every `Version="0.1.0-alpha.1"` snippet: root `README.md`, `src/DotNetSchema/README.md`, the comment in `samples/DotNetSchema.Sample.Models/DotNetSchema.Sample.Models.csproj` |
 | changes packaging, the package contents, the release process or the publish target | `PUBLISH.md` (checklists, content list, smoke test, steps)                                                                                             |
 | establishes a new convention, or hits a new gotcha                             | [Code style](#code-style) / [Gotchas and known issues](#gotchas-and-known-issues)                                                                       |
 | resolves one of the known issues listed below                                  | remove it from [Gotchas and known issues](#gotchas-and-known-issues)                                                                                    |
@@ -29,7 +29,7 @@ Any C# sample added to a README should compile against the current API — check
 
 ## Project
 
-DotNetSchema — a NuGet package that exports `[DotNetSchema]`-marked .NET records and classes to JSON Schema (Draft 2020-12) on every build of a host project that opts in with `DotNetSchemaGenerate=true`. MIT, package id **`DotNetSchema`**, version `0.1.0`, everything targets `net10.0`. Assemblies are read metadata-only (`MetadataLoadContext`), so no consumer code runs during export.
+DotNetSchema — a NuGet package that exports `[DotNetSchema]`-marked .NET records and classes to JSON Schema (Draft 2020-12) on every build of a host project that opts in with `DotNetSchemaGenerate=true`. MIT, package id **`DotNetSchema`**, version `0.1.0-alpha.1`, everything targets `net10.0` (the attribute too, deliberately — consumers need `net10.0`, documented in `src/DotNetSchema/README.md` "Requirements"). Assemblies are read metadata-only (`MetadataLoadContext`), so no consumer code runs during export.
 
 | Project                                                            | Role                                                                                                   | Detailed docs                                       |
 | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
@@ -64,6 +64,8 @@ tests/
 samples/                   Models library + Host app; Host writes into samples/DotNetSchema.Sample.Host/schemas/ (gitignored)
 scripts/pack.sh            Packs the package into artifacts/packages
 PUBLISH.md                 Release checklists and the steps to pack and push a version to nuget.org
+icon.png                   The package icon (packed from the repo root by src/DotNetSchema)
+.gitattributes             Pins text files to LF on every platform
 artifacts/                 Pack output, gitignored
 .github/                   CI workflow, dependabot, pull request template
 ```
@@ -128,7 +130,7 @@ There is no `.editorconfig` in this repo; follow the surrounding code.
 
 ## Gotchas and known issues
 
-- **Stale paths in two READMEs**, left over from before the code was extracted into this repo: `tests/DotNetSchema.Generator.Tests/README.md` gives `dotnet test src/dotnet/Core/ExportJsonSchema/DotNetSchema.Generator.Tests` (correct: `dotnet test tests/DotNetSchema.Generator.Tests`), and `src/DotNetSchema.Generator/README.md` "Determinism" refers to `src/dotnet/.editorconfig`, which does not exist here.
+- **Line endings are pinned to LF by `.gitattributes`.** The golden literals in the tests take their line endings from the checkout, and the generator always writes `\n`; without it, a Windows CI checkout (`core.autocrlf=true`) fails `ScalarRegister_ReproducesItsGoldenDefinition`. Multi-line raw-string goldens also call `.ReplaceLineEndings("\n")`.
 - **MSBuild only auto-imports a package's targets for a `PackageReference`, never a `ProjectReference`.** Every in-repo consumer (`tests/DotNetSchema.Fixtures`, both samples) must `<Import>` `src/DotNetSchema/buildTransitive/DotNetSchema.targets` by hand.
 - **`tests/DotNetSchema.Fixtures` pins `DotNetSchemaDefaultFileName` to `schema.json`** so its `bin/` output equals `SchemaGenerationOptions.Default` and the golden digests. Don't change one without the other.
 - **Packing ships the tool's *publish* output**, not its build output — `tools/` is not a restore target, so `System.Reflection.MetadataLoadContext.dll` must be physically present. `PackagePath`s for `buildTransitive/` files are full file paths, not directories (a trailing separator nests them as `buildTransitive/buildTransitive/`). Use `None Update`, not `Include`, for files the SDK glob already matches (NETSDK1022).
@@ -141,8 +143,8 @@ There is no `.editorconfig` in this repo; follow the surrounding code.
 
 ## Continuous integration
 
-`.github/workflows/ci.yml` runs on every pull request targeting `master` or `develop` and on every push to either, on an `[ubuntu-latest, windows-latest]` matrix with `fail-fast: false` (both path flavours, because the integration resolves paths and starts the tool from MSBuild). Steps: `dotnet restore DotNetSchema.slnx` → `dotnet build -c Release --no-restore` → `dotnet test -c Release --no-build` → `./scripts/pack.sh`; the `.nupkg` is uploaded as the `packages` artifact from the ubuntu leg. In-progress runs are cancelled only for pull requests.
+`.github/workflows/ci.yml` runs on every pull request targeting `master` or `develop` and on every push to either, on an `[ubuntu-latest, windows-latest]` matrix with `fail-fast: false` (both path flavours, because the integration resolves paths and starts the tool from MSBuild). Steps: `dotnet restore DotNetSchema.slnx` → `dotnet build -c Release --no-restore` → `dotnet test -c Release --no-build` → `./scripts/pack.sh`; the `.nupkg` and `.snupkg` are uploaded as the `packages` artifact from the ubuntu leg. In-progress runs are cancelled only for pull requests.
 
-`.github/dependabot.yml`: weekly NuGet updates grouped into one pull request (MetadataLoadContext majors ignored), weekly github-actions updates. **It sets no `target-branch`**, so Dependabot opens pull requests against the default branch rather than `develop`.
+`.github/dependabot.yml`: weekly NuGet updates grouped into one pull request (MetadataLoadContext majors ignored), weekly github-actions updates. It sets no `target-branch`, so Dependabot opens pull requests against the repository's default branch, which on GitHub is `develop`.
 
 **A workflow alone does not block merges** — that needs branch protection on `master` / `develop` in the GitHub repo settings with the `CI / ubuntu-latest` and `CI / windows-latest` checks required.

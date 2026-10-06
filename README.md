@@ -13,12 +13,15 @@ public sealed record Order(Guid Id, IReadOnlyList<OrderLine> Lines);
 
 ```xml
 <!-- wherever models live -->
-<PackageReference Include="DotNetSchema" Version="0.1.0" />
+<PackageReference Include="DotNetSchema" Version="0.1.0-alpha.1" />
 
 <!-- in the host project that should produce the documents -->
 <DotNetSchemaGenerate>true</DotNetSchemaGenerate>
 <DotNetSchemaOutputPath>schemas</DotNetSchemaOutputPath>   <!-- optional; defaults to $(OutDir) -->
 ```
+
+Requires the .NET 10 SDK for the host build, and `net10.0` or later in every project that references the
+package. Published on NuGet as [`DotNetSchema`](https://www.nuget.org/packages/DotNetSchema).
 
 Full documentation: [src/DotNetSchema/README.md](src/DotNetSchema/README.md).
 
@@ -30,6 +33,8 @@ Full documentation: [src/DotNetSchema/README.md](src/DotNetSchema/README.md).
 | `tests/` | Generator tests and the fixture models they run over |
 | `samples/` | A model library + host pair showing the opt-in and a custom output path |
 | `scripts/pack.sh` | Packs into `artifacts/packages` |
+| `PUBLISH.md` | Release checklists and the steps to publish to nuget.org |
+| `icon.png` | The package icon |
 
 ```bash
 dotnet build DotNetSchema.slnx

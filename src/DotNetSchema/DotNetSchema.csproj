@@ -14,11 +14,28 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <PackageId>DotNetSchema</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.1.0-alpha.1</Version>
     <Authors>ofzza</Authors>
     <Description>Exports [DotNetSchema]-marked data models to JSON Schema (Draft 2020-12) on build.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageTags>json-schema;msbuild;codegen;system-text-json</PackageTags>
+    <PackageProjectUrl>https://github.com/ofzza/DotNetSchema</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ofzza/DotNetSchema</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <!--
+    Symbols ship as a separate .snupkg, which dotnet nuget push picks up from beside the .nupkg. A CI build
+    normalises the source paths embedded in the PDBs, so they do not leak the packing machine's directory
+    layout; it is switched on automatically under GitHub Actions, and PUBLISH.md passes it explicitly for
+    a release packed by hand.
+  -->
+  <PropertyGroup>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <ContinuousIntegrationBuild Condition="'$(ContinuousIntegrationBuild)' == '' And '$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
   <!--
@@ -39,6 +56,7 @@
           PackagePath="buildTransitive\DotNetSchema.targets" />
     <None Update="README.md" Pack="true" PackagePath="README.md" />
     <None Include="..\..\LICENSE.md" Pack="true" PackagePath="LICENSE.md" Visible="false" />
+    <None Include="..\..\icon.png" Pack="true" PackagePath="icon.png" Visible="false" />
   </ItemGroup>
 
   <!--
@@ -59,9 +77,12 @@
       <_DotNetSchemaToolPublishDir>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(BaseIntermediateOutputPath)', 'tool-publish'))</_DotNetSchemaToolPublishDir>
     </PropertyGroup>
 
+    <!-- ContinuousIntegrationBuild is passed on explicitly: when it comes from this project's own
+         PropertyGroup rather than the command line it is not a global property, and the tool's PDBs,
+         which ship under tools/, would otherwise keep their machine-specific source paths. -->
     <MSBuild Projects="..\DotNetSchema.Tool\DotNetSchema.Tool.csproj"
              Targets="Publish"
-             Properties="Configuration=$(Configuration);TargetFramework=$(TargetFramework);PublishDir=$(_DotNetSchemaToolPublishDir)" />
+             Properties="Configuration=$(Configuration);TargetFramework=$(TargetFramework);PublishDir=$(_DotNetSchemaToolPublishDir);ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)" />
 
     <!-- Contributed through TargetsForTfmSpecificContentInPackage rather than as None items: by the time
          a target could add None items, pack has already gathered the ones it is going to use. -->

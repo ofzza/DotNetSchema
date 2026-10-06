@@ -10,7 +10,7 @@
   <!--
     A model library only needs the attribute. Outside this repository that is just:
 
-      <PackageReference Include="DotNetSchema" Version="0.1.0" />
+      <PackageReference Include="DotNetSchema" Version="0.1.0-alpha.1" />
 
     It exports nothing itself: DotNetSchemaGenerate is not set here. The host that references this
     library opts in and picks these types up through its project-reference scan.

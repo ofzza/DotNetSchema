@@ -33,6 +33,8 @@ public sealed partial class JsonSchemaGeneratorTests
   {
     var register = Definition("ScalarRegister", typeof(ScalarRegister));
 
+    // The literal takes its line endings from the checkout of this file, which .gitattributes pins to LF;
+    // normalising here as well keeps the test honest on a checkout that ignores it (core.autocrlf=true).
     Assert.Equal(
       """
       {
@@ -94,7 +96,7 @@ public sealed partial class JsonSchemaGeneratorTests
           }
         }
       }
-      """,
+      """.ReplaceLineEndings("\n"),
       Pretty(Trim(register, 7)));
   }
 

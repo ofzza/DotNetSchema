@@ -69,7 +69,7 @@ public sealed partial class JsonSchemaGeneratorTests
     foreach (var document in new JsonSchemaGenerator().Generate([FixturesAssembly]).Documents)
     {
       // A schema file is read by toolchains outside .NET, several of which choke on a BOM. This is a
-      // deliberate departure from src/dotnet/.editorconfig, which asks for one on everything under it.
+      // deliberate departure from the C# sources in this repository, which carry one.
       Assert.Equal((byte)'{', document.ToUtf8Bytes()[0]);
     }
   }

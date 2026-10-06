@@ -50,4 +50,6 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         with:
           name: packages
-          path: artifacts/packages/*.nupkg
+          path: |
+            artifacts/packages/*.nupkg
+            artifacts/packages/*.snupkg

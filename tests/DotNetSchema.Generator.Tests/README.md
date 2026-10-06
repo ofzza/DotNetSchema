@@ -3,7 +3,7 @@
 Tests for [`DotNetSchema.Generator`](../../src/DotNetSchema.Generator/README.md).
 
 ```bash
-dotnet test src/dotnet/Core/ExportJsonSchema/DotNetSchema.Generator.Tests   # from the repository root
+dotnet test tests/DotNetSchema.Generator.Tests   # from the repository root
 ```
 
 xUnit v3. Pure computation apart from one metadata-only assembly load, so the suite runs in about a

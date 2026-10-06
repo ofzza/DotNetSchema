@@ -1,0 +1,5 @@
+# LF everywhere. The generator writes "\n" regardless of platform, and the golden test literals take
+# their line endings from the checkout; a CRLF checkout on Windows would put them out of reach.
+* text=auto eol=lf
+
+*.png binary
