@@ -144,9 +144,9 @@ Output is byte-stable, because the goldens depend on it and so will the TypeScri
   than becoming `\d+`. "Unsafe" means unsafe to interpolate into HTML, which a schema file is not.
 - One trailing newline; UTF-8 with **no** BOM.
 
-That last one departs from `src/dotnet/.editorconfig`, whose `[*]` section asks for a BOM on everything
-beneath it. A BOM in a schema file breaks readers outside .NET, and the documents land in `bin/` rather
-than under source control, so the departure costs nothing.
+That last one departs from this repository's own C# sources, which in this project, the tool and the tests
+start with a BOM. A BOM in a schema file breaks readers outside .NET, and the documents land in `bin/`
+rather than under source control, so the departure costs nothing.
 
 ## Tests
 

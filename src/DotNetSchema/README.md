@@ -20,12 +20,20 @@ The documents are regenerated on every build of the project that opts in, one pe
 [JSON Schema Draft 2020-12](https://json-schema.org/draft/2020-12/schema). The assemblies are read
 metadata-only: no code from your project is executed to produce them.
 
+## Requirements
+
+- **.NET 10 SDK** for the host build. The export tool ships pre-built inside the package and runs on the
+  .NET 10 runtime, whatever the host itself targets.
+- **`net10.0` or later** for every project that references the package. The attribute assembly targets
+  `net10.0` only, so a library on an earlier framework restores the package and then fails to compile
+  `using DotNetSchema;` with `CS0246`.
+
 ## Getting started
 
 Reference the package wherever you declare models:
 
 ```xml
-<PackageReference Include="DotNetSchema" Version="0.1.0" />
+<PackageReference Include="DotNetSchema" Version="0.1.0-alpha.1" />
 ```
 
 Then opt in, in the **host** project — the one that should own the documents:
@@ -120,7 +128,7 @@ cross-document `$ref`s, so a file can be handed to a code generator on its own.
 **The schema describes what System.Text.Json writes**, not how the C# is declared. Property names are
 camelCase; `[JsonPropertyName]`, `[JsonIgnore]` and `[JsonPropertyOrder]` are honoured; and where the
 serialiser's output does not match the obvious JSON Schema keyword, the document says what is true rather
-than what is tidy. See [the generator's README](../DotNetSchema.Generator/README.md) for
+than what is tidy. See [the generator's README](https://github.com/ofzza/DotNetSchema/blob/master/src/DotNetSchema.Generator/README.md) for
 the full mapping table and the three places that bites.
 
 ## Diagnostics
@@ -194,15 +202,15 @@ DotNetSchema/
 | Project | What it is |
 | --- | --- |
 | **`DotNetSchema`** | This one. The attribute, the MSBuild integration and the packaging. No dependencies; the only assembly a consumer references. |
-| [`DotNetSchema.Generator`](../DotNetSchema.Generator/README.md) | The engine. Reads assemblies, produces documents. |
-| [`DotNetSchema.Tool`](../DotNetSchema.Tool/README.md) | The command-line shell the build runs. |
+| [`DotNetSchema.Generator`](https://github.com/ofzza/DotNetSchema/blob/master/src/DotNetSchema.Generator/README.md) | The engine. Reads assemblies, produces documents. |
+| [`DotNetSchema.Tool`](https://github.com/ofzza/DotNetSchema/blob/master/src/DotNetSchema.Tool/README.md) | The command-line shell the build runs. |
 
 ## Tests
 
 The engine is covered by
-[`DotNetSchema.Generator.Tests`](../../tests/DotNetSchema.Generator.Tests/README.md); the build integration
+[`DotNetSchema.Generator.Tests`](https://github.com/ofzza/DotNetSchema/blob/master/tests/DotNetSchema.Generator.Tests/README.md); the build integration
 is covered end to end by `DotNetSchema.Fixtures` and the samples, which export documents on every build.
 
 ## License
 
-MIT — see [LICENSE.md](../../LICENSE.md).
+MIT — see [LICENSE.md](https://github.com/ofzza/DotNetSchema/blob/master/LICENSE.md).
