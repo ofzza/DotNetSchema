@@ -29,7 +29,7 @@ Any C# sample added to a README should compile against the current API — check
 
 ## Project
 
-DotNetSchema — a NuGet package that exports `[DotNetSchema]`-marked .NET records and classes to JSON Schema (Draft 2020-12) on every build of a host project that opts in with `DotNetSchemaGenerate=true`. MIT, package id **`DotNetSchema`**, version `0.1.0-alpha.1`, everything targets `net10.0` (the attribute too, deliberately — consumers need `net10.0`, documented in `src/DotNetSchema/README.md` "Requirements"). Assemblies are read metadata-only (`MetadataLoadContext`), so no consumer code runs during export.
+DotNetSchema — a NuGet package that exports `[DotNetSchema]`-marked .NET records and classes to JSON Schema (Draft 2020-12) on every build of a host project that opts in with `DotNetSchemaGenerate=true`. MIT, package id **`DotNetSchema`** ([published on nuget.org](https://www.nuget.org/packages/DotNetSchema/)), version `0.1.0-alpha.1`, everything targets `net10.0` (the attribute too, deliberately — consumers need `net10.0`, documented in `src/DotNetSchema/README.md` "Requirements"). Assemblies are read metadata-only (`MetadataLoadContext`), so no consumer code runs during export.
 
 | Project                                                            | Role                                                                                                   | Detailed docs                                       |
 | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
@@ -139,7 +139,7 @@ There is no `.editorconfig` in this repo; follow the surrounding code.
 - **A Web SDK host with an in-tree `DotNetSchemaOutputPath` must exclude that folder from `Content`**, or the documents are published twice.
 - **`System.Reflection.MetadataLoadContext`'s major version tracks the TFM.** Dependabot ignores its semver-major updates; bump it by hand together with the TFM, in both `DotNetSchema.Tool.csproj` and `DotNetSchema.Generator.Tests.csproj`.
 - **Models that reach the host as packages (not projects) are not scanned** — only the host's own assembly and its project-reference closure.
-- **`*.gitignore.*` files and `*.gitignore/` directories are local-only** (e.g. `TODO.gitignore.md`) and ignored by `.gitignore` — never commit them. An empty stray `DotNetSchema/` directory sits at the repo root (git ignores empty directories).
+- **`*.gitignore.*` files and `*.gitignore/` directories are local-only** (e.g. `TODO.gitignore.md`) and ignored by `.gitignore` — never commit them.
 
 ## Continuous integration
 
