@@ -12,6 +12,8 @@
 
       <PackageReference Include="DotNetSchema" Version="0.1.0-alpha.1" />
 
+    from https://www.nuget.org/packages/DotNetSchema/
+
     It exports nothing itself: DotNetSchemaGenerate is not set here. The host that references this
     library opts in and picks these types up through its project-reference scan.
   -->
