@@ -126,7 +126,7 @@ There is no `.editorconfig` in this repo; follow the surrounding code.
 - MSBuild files: every non-obvious choice gets an explanatory `<!-- -->` comment in the same voice as the existing ones (what it does, why the obvious alternative is wrong).
 - Encoding: `.cs` / `.csproj` files in `DotNetSchema.Generator`, `DotNetSchema.Tool` and both `tests/` projects start with a UTF-8 BOM; `src/DotNetSchema`, the samples, Markdown and scripts do not. Match the file you edit, and keep the BOM on new files in the BOM-carrying projects. (Generated schema documents never carry a BOM.)
 - Prose in READMEs and comments uses British spelling (serialise, initialiser, behaviour).
-- Commit messages: imperative summary line; explain *why* when a golden digest moves.
+- Commit messages: imperative summary line; explain *why* when a golden digest moves. No agent attribution trailers — never add `Co-Authored-By: Claude …`, `Claude-Session: …` or similar footers to commit messages or pull request descriptions.
 
 ## Gotchas and known issues
 
