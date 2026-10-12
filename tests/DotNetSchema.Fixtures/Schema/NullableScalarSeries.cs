@@ -3,7 +3,9 @@
 /// <summary>
 /// The nullable twin of <see cref="ScalarSeries" />: the same series, each with nullable items, and the
 /// series themselves cycling through required, optional, required-but-nullable and optional-and-nullable
-/// — so <c>Array&lt;T | null&gt;</c> is covered for every portable primitive in all four positions.
+/// — so <c>Array&lt;T | null&gt;</c> is covered for every portable primitive in all four positions. The one
+/// exception is <see cref="AnswerSheetScan" />, a base64 blob with no items to null, which is nullable as a
+/// whole instead.
 /// </summary>
 public sealed record NullableScalarSeries
 {
@@ -128,8 +130,8 @@ public sealed record NullableScalarSeries
   public IReadOnlyList<DateTimeOffset?>? SavedAt { get; init; }
 
   /// <summary>
-  /// <c>byte[]</c> — scanned answer sheet, as an opaque binary payload. Items are <c>null</c> where nothing
-  /// was recorded. The series itself is required and never null.
+  /// <c>byte[]?</c> — scanned answer sheet, as an opaque binary payload. A base64 string has no items to
+  /// null, so the blob itself is required but nullable: <c>null</c> when no sheet was scanned.
   /// </summary>
-  public required IReadOnlyList<byte?> AnswerSheetScan { get; init; }
+  public required byte[]? AnswerSheetScan { get; init; }
 }

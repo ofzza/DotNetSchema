@@ -195,6 +195,15 @@ public sealed partial class JsonSchemaGeneratorTests
       foreach (var (property, i) in definition["properties"]!.AsObject().Select((p, i) => (p, i)))
       {
         var schema = property.Value!.AsObject();
+
+        // A base64 blob has no items to null, so it is nullable as a whole, and required, instead.
+        if (schema["contentEncoding"] is not null)
+        {
+          AssertAcceptsNull(schema);
+          Assert.Contains(property.Key, required);
+          continue;
+        }
+
         AssertAcceptsNull(schema[elements!]!.AsObject());
         Assert.Equal(i % 4 is 0 or 2, required.Contains(property.Key));
         Assert.Equal(i % 4 is 2 or 3, AcceptsNull(schema));

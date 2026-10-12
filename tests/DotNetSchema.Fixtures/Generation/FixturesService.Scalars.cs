@@ -97,11 +97,10 @@ public sealed partial class FixturesService
 
       // The blob is deliberately longer than the rest; it stands in for an opaque binary payload
       // rather than for a per-item reading.
-      AnswerSheetScan = GenerateSeries(
-            seed,
-            nameof(ScalarSeries.AnswerSheetScan),
-            length * 8,
-            (random, _) => random.NextByte())
+      AnswerSheetScan =
+      [
+        .. GenerateSeries(seed, nameof(ScalarSeries.AnswerSheetScan), length * 8, (random, _) => random.NextByte())
+      ]
     };
   }
 
@@ -313,11 +312,7 @@ public sealed partial class FixturesService
             seed,
             nameof(NullableScalarSeries.SavedAt),
             options),
-      AnswerSheetScan = OrNullValueItems(
-            plain.AnswerSheetScan,
-            seed,
-            nameof(NullableScalarSeries.AnswerSheetScan),
-            options)
+      AnswerSheetScan = OrNull(plain.AnswerSheetScan, seed, nameof(NullableScalarSeries.AnswerSheetScan), options)
     };
   }
 

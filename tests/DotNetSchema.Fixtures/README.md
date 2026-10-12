@@ -310,7 +310,7 @@ record ScalarSeries {
     ResponseIds          : Array<Guid>            MarkedOn             : Array<DateOnly>
     OpenedAt             : Array<TimeOnly>        Durations            : Array<TimeSpan>
     RecordedAtUtc        : Array<DateTime>        SavedAt              : Array<DateTimeOffset>
-    AnswerSheetScan      : Array<byte>            // opaque binary payload
+    AnswerSheetScan      : byte[]                 // opaque binary payload, written as base64
 }
 
 record ScalarRegister {
@@ -344,6 +344,7 @@ record NullableScalarSeries {      // every item T?; the series cycle R, O, RN, 
     AttemptedFlags   : Array<bool?>        CurveAdjustments?  : Array<sbyte?>
     RawScores        : Array<byte?>?       SeatNumbers?       : Array<short?>?
     ...
+    AnswerSheetScan  : byte[]?             // no items to null, so the blob itself is nullable
 }
 
 record NullableScalarRegister {    // every value T?; the maps cycle R, O, RN, ON
@@ -478,7 +479,8 @@ same property names, hung off `AssessmentRecord`:
 
 - `NullableScalarBattery` — every property `T?`, alternately `required` and optional;
 - `NullableScalarSeries` — every series holds `T?` items (`Array<T | null>`), and the series themselves
-  cycle by ordinal through the four combinations above;
+  cycle by ordinal through the four combinations above; the base64 `AnswerSheetScan` has no items, so it
+  is a required, nullable `byte[]?` instead;
 - `NullableScalarRegister` — every map holds `T?` values (`Record<K, T | null>`), the maps cycling likewise.
   Keys stay non-null: System.Text.Json cannot write a null property name.
 
