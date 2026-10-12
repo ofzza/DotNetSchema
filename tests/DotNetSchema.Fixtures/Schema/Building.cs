@@ -14,11 +14,11 @@ public sealed record Building
   /// <summary>Number of floors above ground.</summary>
   public required short FloorCount { get; init; }
 
-  /// <summary>Whether the building is step-free throughout.</summary>
-  public required bool IsAccessible { get; init; }
+  /// <summary>Whether the building is step-free throughout. Optional but never null: assumed not.</summary>
+  public bool IsAccessible { get; init; }
 
-  /// <summary>Year the building was completed.</summary>
-  public required ushort BuiltInYear { get; init; }
+  /// <summary>Year the building was completed. Required but nullable: <c>null</c> when unknown.</summary>
+  public required ushort? BuiltInYear { get; init; }
 
   /// <summary>Rooms inside the building.</summary>
   public required IReadOnlyList<Room> Rooms { get; init; }

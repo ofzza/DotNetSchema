@@ -85,7 +85,7 @@ public sealed partial class FixturesService : IFixturesService
     {
       Id = random.NextGuid(),
       Name = $"{random.Pick(FixtureVocabulary.SchoolPrefixes)} {random.Pick(FixtureVocabulary.SchoolSuffixes)}",
-      Motto = random.Pick(FixtureVocabulary.Mottos),
+      Motto = OrNull(random.Pick(FixtureVocabulary.Mottos), seed, nameof(School.Motto), options),
       FoundedOn = random.NextDateOnly(new DateOnly(1875, 1, 1), 45_000),
       IsAccredited = random.NextBool(0.85d),
       EnrollmentCap = random.NextUInt16(180, 4_500),
@@ -125,8 +125,12 @@ public sealed partial class FixturesService : IFixturesService
     {
       Id = random.NextGuid(),
       Name = random.Pick(FixtureVocabulary.CampusNames),
-      Address = GenerateAddress(seed.Derive(nameof(Campus.Address))),
-      OpenedOn = random.NextDateOnly(new DateOnly(1900, 1, 1), 44_000),
+      Address = GenerateAddress(seed.Derive(nameof(Campus.Address)), options),
+      OpenedOn = OrNullValue(
+            random.NextDateOnly(new DateOnly(1900, 1, 1), 44_000),
+            seed,
+            nameof(Campus.OpenedOn),
+            options),
       AreaHectares = random.NextDouble(0.4d, 65d),
       Buildings = GenerateList(
             seed,
@@ -137,7 +141,7 @@ public sealed partial class FixturesService : IFixturesService
     };
   }
 
-  private static Address GenerateAddress(FixtureSeed seed)
+  private static Address GenerateAddress(FixtureSeed seed, FixtureOptions options)
   {
     var random = new StableRandom(seed.Value);
 
@@ -147,7 +151,11 @@ public sealed partial class FixturesService : IFixturesService
             CultureInfo.InvariantCulture,
             $"{random.Pick(FixtureVocabulary.Streets)} {random.NextInt32(1, 180)}"),
       City = random.Pick(FixtureVocabulary.Cities),
-      PostalCode = random.NextInt32(10_000, 99_999).ToString(CultureInfo.InvariantCulture),
+      PostalCode = OrNull(
+            random.NextInt32(10_000, 99_999).ToString(CultureInfo.InvariantCulture),
+            seed,
+            nameof(Address.PostalCode),
+            options),
       CountryCode = random.Pick(FixtureVocabulary.CountryCodes),
       Latitude = random.NextDouble(35d, 62d, 6),
       Longitude = random.NextDouble(-9d, 26d, 6)
@@ -164,7 +172,7 @@ public sealed partial class FixturesService : IFixturesService
       Name = random.Pick(FixtureVocabulary.BuildingNames),
       FloorCount = random.NextInt16(1, 9),
       IsAccessible = random.NextBool(0.7d),
-      BuiltInYear = random.NextUInt16(1890, 2024),
+      BuiltInYear = OrNullValue(random.NextUInt16(1890, 2024), seed, nameof(Building.BuiltInYear), options),
       Rooms = GenerateList(seed, nameof(Building.Rooms), budget, options, (s, b) => GenerateRoom(s, b, options))
     };
   }
@@ -199,7 +207,11 @@ public sealed partial class FixturesService : IFixturesService
       Id = random.NextGuid(),
       Name = name ?? random.PickEnum<DepartmentName>(),
       CostCentre = StableRandom.Code("CC-", random.NextInt32(100, 999), 3),
-      AnnualBudget = random.NextDecimal(35_000m, 4_200_000m),
+      AnnualBudget = OrNullValue(
+            random.NextDecimal(35_000m, 4_200_000m),
+            seed,
+            nameof(Department.AnnualBudget),
+            options),
       EstablishedOn = random.NextDateOnly(new DateOnly(1920, 1, 1), 36_000),
       Head = GenerateOptional(
             seed,
@@ -246,9 +258,17 @@ public sealed partial class FixturesService : IFixturesService
       BornOn = effectiveRole == PersonRole.Student
             ? random.NextDateOnly(new DateOnly(2001, 1, 1), 2_600)
             : random.NextDateOnly(new DateOnly(1958, 1, 1), 14_600),
-      Email = $"{givenName}.{familyName}@school.example".ToLowerInvariant(),
+      Email = OrNull(
+            $"{givenName}.{familyName}@school.example".ToLowerInvariant(),
+            seed,
+            nameof(Person.Email),
+            options),
       IsActive = random.NextBool(0.9d),
-      GradePointAverage = random.NextDouble(1d, 5d),
+      GradePointAverage = OrNullValue(
+            random.NextDouble(1d, 5d),
+            seed,
+            nameof(Person.GradePointAverage),
+            options),
       Classes = classes,
       Grades = GenerateGrades(seed.Derive(nameof(Person.Grades)), classes, options),
       ContactMethods = GenerateContactMethods(seed.Derive(nameof(Person.ContactMethods)), options),
@@ -338,7 +358,7 @@ public sealed partial class FixturesService : IFixturesService
       Credits = random.NextDouble(1d, 12d, 1),
       Seats = random.NextByte(6, 200),
       IsEnrollmentOpen = random.NextBool(0.6d),
-      Synopsis = random.Pick(FixtureVocabulary.Synopses),
+      Synopsis = OrNull(random.Pick(FixtureVocabulary.Synopses), seed, nameof(Class.Synopsis), options),
       Professor = GenerateOptional(
             seed,
             nameof(Class.Professor),
@@ -421,10 +441,14 @@ public sealed partial class FixturesService : IFixturesService
     {
       Id = random.NextGuid(),
       Name = name ?? random.PickEnum<BookName>(),
-      Isbn = string.Create(
-            CultureInfo.InvariantCulture,
-            $"978-{random.NextInt32(0, 10)}-{random.NextInt32(100, 999)}"
-            + $"-{random.NextInt32(10_000, 99_999)}-{random.NextInt32(0, 10)}"),
+      Isbn = OrNull(
+            string.Create(
+                CultureInfo.InvariantCulture,
+                $"978-{random.NextInt32(0, 10)}-{random.NextInt32(100, 999)}"
+                + $"-{random.NextInt32(10_000, 99_999)}-{random.NextInt32(0, 10)}"),
+            seed,
+            nameof(Book.Isbn),
+            options),
       Edition = random.NextByte(1, 12),
       PageCount = random.NextUInt16(64, 1_400),
       Price = random.NextDecimal(9.99m, 240m),
@@ -456,7 +480,11 @@ public sealed partial class FixturesService : IFixturesService
       Ordinal = ordinal,
       Title = random.Pick(FixtureVocabulary.ChapterTitles),
       StartPage = random.NextUInt16(1, 1_200),
-      EstimatedReadingTime = random.NextTimeSpan(10, 240),
+      EstimatedReadingTime = OrNullValue(
+            random.NextTimeSpan(10, 240),
+            seed,
+            nameof(Chapter.EstimatedReadingTime),
+            options),
       Sections = GenerateList(
             seed,
             nameof(Chapter.Sections),
@@ -486,7 +514,7 @@ public sealed partial class FixturesService : IFixturesService
     {
       Id = random.NextGuid(),
       Number = number,
-      Heading = random.Pick(FixtureVocabulary.SectionHeadings),
+      Heading = OrNull(random.Pick(FixtureVocabulary.SectionHeadings), seed, nameof(Section.Heading), options),
       Body = random.Pick(FixtureVocabulary.SectionBodies),
       WordCount = random.NextInt32(120, 3_500),
       Exercises = GenerateList(
@@ -494,11 +522,11 @@ public sealed partial class FixturesService : IFixturesService
             nameof(Section.Exercises),
             budget,
             options,
-            (s, _, i) => GenerateExercise(s, number, i + 1))
+            (s, _, i) => GenerateExercise(s, options, number, i + 1))
     };
   }
 
-  private static Exercise GenerateExercise(FixtureSeed seed, string sectionNumber, int ordinal)
+  private static Exercise GenerateExercise(FixtureSeed seed, FixtureOptions options, string sectionNumber, int ordinal)
   {
     var random = new StableRandom(seed.Value);
 
@@ -507,7 +535,7 @@ public sealed partial class FixturesService : IFixturesService
       Id = random.NextGuid(),
       Label = string.Create(CultureInfo.InvariantCulture, $"{sectionNumber}.{ordinal}"),
       Prompt = random.Pick(FixtureVocabulary.ExercisePrompts),
-      Difficulty = random.NextSingle(1f, 5f, 1),
+      Difficulty = OrNullValue(random.NextSingle(1f, 5f, 1), seed, nameof(Exercise.Difficulty), options),
       HasWorkedSolution = random.NextBool(0.4d),
       Marks = random.NextByte(1, 20)
     };
@@ -524,7 +552,7 @@ public sealed partial class FixturesService : IFixturesService
       Name = random.Pick(FixtureVocabulary.LibraryNames),
       VolumeCount = (uint)random.NextInt64(1_200L, 2_400_000L),
       OpensAt = opensAt,
-      ClosesAt = opensAt.AddHours(random.NextInt32(8, 15)),
+      ClosesAt = OrNullValue(opensAt.AddHours(random.NextInt32(8, 15)), seed, nameof(Library.ClosesAt), options),
       Catalogue = GenerateKeyedMap<BookName, Book>(
             seed,
             nameof(Library.Catalogue),
@@ -570,7 +598,11 @@ public sealed partial class FixturesService : IFixturesService
       Title = $"{random.PickEnum<AssessmentKind>()} — {random.Pick(FixtureVocabulary.ChapterTitles)}",
       Weight = random.NextDecimal(0.05m, 0.6m),
       MaximumMarks = random.NextUInt16(10, 200),
-      DueAt = random.NextDateTimeOffset(FixtureVocabulary.EpochUtc, 2_200),
+      DueAt = OrNullValue(
+            random.NextDateTimeOffset(FixtureVocabulary.EpochUtc, 2_200),
+            seed,
+            nameof(Assessment.DueAt),
+            options),
       IsOpenBook = random.NextBool(0.3d),
       Class = setFor,
 

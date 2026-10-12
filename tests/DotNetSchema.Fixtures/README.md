@@ -26,6 +26,7 @@ AssessmentRecord scalars = fixtures.GenerateAssessmentRecord(42);   // scalars o
   - [Pseudocode](#pseudocode)
   - [Graph](#graph)
   - [Recursion](#recursion)
+  - [Required and nullable](#required-and-nullable)
 - [Generation](#generation)
   - [Determinism](#determinism)
   - [Path-derived seeds](#path-derived-seeds)
@@ -50,6 +51,7 @@ AssessmentRecord scalars = fixtures.GenerateAssessmentRecord(42);   // scalars o
 | Four or more levels of nesting | `School → Campus → Building → Room → Class → Book → Chapter → Section → Exercise` (9) |
 | Direct recursion | `School.SisterSchools`, `Person.Mentor`, `Person.Advisees`, `Class.Prerequisites`, `Department.SubDepartments`, `Chapter.SubChapters` |
 | Indirect recursion | `Class ↔ Book`, `Class ↔ Person`, `Class ↔ Room`, `Class ↔ Assessment` |
+| Required × nullable, all four combinations | see [Required and nullable](#required-and-nullable) |
 
 ### What counts as "portable"
 
@@ -83,6 +85,9 @@ tends to go wrong and the fixtures are built to catch it:
 
 ### Pseudocode
 
+`Name? : T` marks a property that is not `required` (it may be left out); `Name : T?` marks one that
+accepts `null`. Everything else is both required and non-null.
+
 ```pseudocode
 enum ClassName      { Algebra, Geometry, Calculus, Statistics, Biology, Chemistry, Physics,
                       ComputerScience, Robotics, Astronomy, WorldHistory, Geography, Literature,
@@ -104,41 +109,43 @@ enum AssessmentKind { Quiz, MidtermExam, FinalExam, Essay, LabReport, Practical,
 record School {
     Id             : Guid
     Name           : string
-    Motto          : string
+    Motto?         : string?
     FoundedOn      : DateOnly
     IsAccredited   : bool
-    EnrollmentCap  : ushort
+    EnrollmentCap? : ushort                                 // 0 = uncapped
     Endowment      : decimal
     Campuses       : Array<Campus>
     Departments    : Map<DepartmentName, Department>        // map of records, enum key
-    Library        : Library?
+    Library?       : Library?
     SisterSchools  : Array<School>                          // ↺ direct recursion
 }
 
 record Campus {
-    Id, Name, OpenedOn : Guid, string, DateOnly
-    AreaHectares       : double
+    Id, Name           : Guid, string
+    OpenedOn           : DateOnly?
+    AreaHectares?      : double
     Address            : Address                            // value record, never truncated
     Buildings          : Array<Building>
 }
 
 record Address {
-    Street, City, PostalCode, CountryCode : string
+    Street, City, CountryCode             : string
+    PostalCode?                           : string?
     Latitude, Longitude                   : double
 }
 
 record Building {
     Id, Name      : Guid, string
     FloorCount    : short
-    IsAccessible  : bool
-    BuiltInYear   : ushort
+    IsAccessible? : bool
+    BuiltInYear   : ushort?
     Rooms         : Array<Room>
 }
 
 record Room {
     Id, Code : Guid, string
     Kind     : RoomKind
-    Seats    : ushort
+    Seats?   : ushort
     Floor    : sbyte                                        // negative = basement
     Classes  : Array<Class>                                 // ↻ indirect, back into Class
 }
@@ -149,10 +156,10 @@ record Room {
 record Department {
     Id              : Guid
     Name            : DepartmentName
-    CostCentre      : string
-    AnnualBudget    : decimal
+    CostCentre?     : string
+    AnnualBudget    : decimal?
     EstablishedOn   : DateOnly
-    Head            : Person?
+    Head?           : Person?
     Courses         : Array<Class>
     SubDepartments  : Array<Department>                     // ↺ direct recursion
 }
@@ -163,15 +170,15 @@ record Person {
     FamilyName        : string
     Role              : PersonRole
     BornOn            : DateOnly
-    Email             : string
+    Email?            : string?
     IsActive          : bool
-    GradePointAverage : double
+    GradePointAverage : double?
     Classes           : Array<Class>                        // ↻ indirect: Person → Class → Person
     Grades            : Map<ClassName, int>                 // map with an enum key
     ContactMethods    : Map<string, string>
-    Mentor            : Person?                             // ↺ direct recursion
-    Advisees          : Array<Person>                       // ↺ direct recursion, across a collection
-    Office            : Room?                               // ↻ indirect: Person → Room → Class → Person
+    Mentor?           : Person?                             // ↺ direct recursion
+    Advisees?         : Array<Person>                       // ↺ direct recursion, across a collection
+    Office?           : Room?                               // ↻ indirect: Person → Room → Class → Person
 }
 
 record Class {
@@ -183,14 +190,14 @@ record Class {
     Credits            : double
     Seats              : byte
     IsEnrollmentOpen   : bool
-    Synopsis           : string
-    Professor          : Person?                            // ↻ indirect
+    Synopsis?          : string?
+    Professor?         : Person?                            // ↻ indirect
     Students           : Array<Person>                      // ↻ indirect
     Materials          : Array<Book>                        // ↻ indirect: Class → Book → Class
-    Prerequisites      : Array<Class>                       // ↺ direct recursion
+    Prerequisites?     : Array<Class>                       // ↺ direct recursion
     Schedule           : Array<ClassSession>
     Assessments        : Array<Assessment>
-    Room               : Room?                              // ↻ indirect
+    Room?              : Room?                              // ↻ indirect
 }
 
 record ClassSession {
@@ -198,8 +205,8 @@ record ClassSession {
     Day       : DayOfWeek
     StartsAt  : TimeOnly
     Duration  : TimeSpan
-    IsRemote  : bool
-    Room      : Room?
+    IsRemote? : bool
+    Room?     : Room?
 }
 
 
@@ -207,9 +214,9 @@ record ClassSession {
 
 record Library {
     Id, Name      : Guid, string
-    VolumeCount   : uint
+    VolumeCount?  : uint
     OpensAt       : TimeOnly
-    ClosesAt      : TimeOnly
+    ClosesAt      : TimeOnly?                               // null = open around the clock
     Catalogue     : Map<BookName, Book>                     // map of records, enum key
     Librarians    : Array<Person>
     ReadingRooms  : Array<Room>
@@ -218,13 +225,13 @@ record Library {
 record Book {
     Id                 : Guid
     Name               : BookName
-    Isbn               : string
+    Isbn               : string?
     Edition            : byte
     PageCount          : ushort
     Price              : decimal
     PublishedOn        : DateOnly
-    HasDigitalLicence  : bool
-    Class              : Class?                             // ↻ indirect: Book → Class → Book
+    HasDigitalLicence? : bool
+    Class?             : Class?                             // ↻ indirect: Book → Class → Book
     Authors            : Array<Person>
     Chapters           : Array<Chapter>
 }
@@ -234,21 +241,22 @@ record Chapter {
     Ordinal               : int
     Title                 : string
     StartPage             : ushort
-    EstimatedReadingTime  : TimeSpan
+    EstimatedReadingTime? : TimeSpan?
     Sections              : Array<Section>
-    SubChapters           : Array<Chapter>                  // ↺ direct recursion
+    SubChapters?          : Array<Chapter>                  // ↺ direct recursion
 }
 
 record Section {
-    Id, Number, Heading, Body : Guid, string, string, string
-    WordCount                 : int
+    Id, Number, Body          : Guid, string, string
+    Heading                   : string?
+    WordCount?                : int
     Exercises                 : Array<Exercise>
 }
 
 record Exercise {
     Id, Label, Prompt  : Guid, string, string
-    Difficulty         : float
-    HasWorkedSolution  : bool
+    Difficulty?        : float?
+    HasWorkedSolution? : bool
     Marks              : byte
 }
 
@@ -261,9 +269,9 @@ record Assessment {
     Title         : string
     Weight        : decimal
     MaximumMarks  : ushort
-    DueAt         : DateTimeOffset
-    IsOpenBook    : bool
-    Class         : Class?                                  // ↻ indirect
+    DueAt         : DateTimeOffset?
+    IsOpenBook?   : bool
+    Class?        : Class?                                  // ↻ indirect
     Record        : AssessmentRecord                        // value record, never truncated
 }
 
@@ -418,6 +426,29 @@ The longest of these runs `Person → Office → Room → Classes → Class → 
 home, through two intermediate types. It is also the one most likely to catch a naive reference tracker,
 since neither intermediate looks like it belongs to a person.
 
+### Required and nullable
+
+Whether a property is `required` and whether it accepts `null` are separate questions — the schema's
+`required` follows the C# `required` modifier alone — so the school graph answers them in all four
+combinations, with at least one of each in most models. A consumer that turns the schema into types (for
+example [`tsschema`](https://www.npmjs.com/package/@ofzza/tsschema)) can therefore tell `x?: T` from
+`x: T | null`:
+
+| C# | Schema | TypeScript | Examples |
+| --- | --- | --- | --- |
+| `required T X` | in `required`, plain type | `x: T` | everything not listed here |
+| `T X { get; init; }` (initialised) | not in `required`, plain type | `x?: T` | `School.EnrollmentCap`, `Department.CostCentre`, `Person.Advisees`, `Chapter.SubChapters`, `Assessment.IsOpenBook` |
+| `required T? X` | in `required`, `"type": [T, "null"]` | `x: T \| null` | `Campus.OpenedOn`, `Person.GradePointAverage`, `Book.Isbn`, `Section.Heading`, `Assessment.DueAt` |
+| `T? X` | not in `required`, `"type": [T, "null"]` or `anyOf` with `null` | `x?: T \| null` | `School.Motto`, `Person.Email`, `Exercise.Difficulty`; every nullable model reference (`School.Library`, `Person.Mentor`, …) |
+
+The full lists live in
+[`JsonSchemaGeneratorTests.Nullability.cs`](../DotNetSchema.Generator.Tests/JsonSchemaGeneratorTests.Nullability.cs).
+The three scalar bundles and `AssessmentRecord` stay fully required: their job is type coverage.
+
+The generator always sets the optional, non-null properties (System.Text.Json writes them regardless), and
+fills each nullable property at `OptionalFillRate`, deciding from a seed derived from the property's path
+so the record's other values do not move.
+
 ---
 
 ## Generation
@@ -504,7 +535,7 @@ most `n` entity edges from the root, plus one more if the last node is a back-re
 | `MinCollectionSize` / `MaxCollectionSize` | `1` / `3` | Elements per collection |
 | `MapSize` | `3` | Entries per map |
 | `SeriesLength` | `4` | Elements per scalar series (the binary blob gets `8×`) |
-| `OptionalFillRate` | `0.75` | Chance a nullable reference is filled rather than `null` |
+| `OptionalFillRate` | `0.75` | Chance a nullable property (a reference or a scalar) is filled rather than `null` |
 | `BackReferenceDepth` | `0` | Budget granted to a back-reference |
 
 Breadth is cheap; depth is not. Cost grows by roughly an order of magnitude per level, so the default
@@ -522,7 +553,7 @@ the absolute number.
 
 Two settings worth knowing about:
 
-- `OptionalFillRate = 1.0` fills every nullable reference — the densest graph the depth budget allows.
+- `OptionalFillRate = 1.0` fills every nullable property — the densest graph the depth budget allows.
 - `OptionalFillRate = 0.0` leaves them all `null`, which is the quick way to exercise the null paths.
 
 ---

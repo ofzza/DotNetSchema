@@ -23,14 +23,17 @@ public sealed record Person
   /// <summary>Date of birth.</summary>
   public required DateOnly BornOn { get; init; }
 
-  /// <summary>School e-mail address.</summary>
-  public required string Email { get; init; }
+  /// <summary>School e-mail address. Optional and nullable: not everyone has been issued one.</summary>
+  public string? Email { get; init; }
 
   /// <summary>Whether the person's record is currently active.</summary>
   public required bool IsActive { get; init; }
 
-  /// <summary>Grade point average across all completed classes.</summary>
-  public required double GradePointAverage { get; init; }
+  /// <summary>
+  /// Grade point average across all completed classes. Required but nullable: <c>null</c> before the first
+  /// class is completed.
+  /// </summary>
+  public required double? GradePointAverage { get; init; }
 
   /// <summary>Class offerings attended or taught. Indirectly recursive: Person -> Class -> Person.</summary>
   public required IReadOnlyList<Class> Classes { get; init; }
@@ -44,8 +47,11 @@ public sealed record Person
   /// <summary>Academic mentor. Directly recursive: Person -> Person.</summary>
   public Person? Mentor { get; init; }
 
-  /// <summary>People mentored by this person. Directly recursive across a collection.</summary>
-  public required IReadOnlyList<Person> Advisees { get; init; }
+  /// <summary>
+  /// People mentored by this person. Directly recursive across a collection. Optional but never null: empty
+  /// for anyone who mentors nobody.
+  /// </summary>
+  public IReadOnlyList<Person> Advisees { get; init; } = [];
 
   /// <summary>
   /// Assigned office or home room, if any. Indirectly recursive: Person -> Room -> Class -> Person.

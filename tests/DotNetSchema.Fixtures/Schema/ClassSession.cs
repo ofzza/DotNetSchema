@@ -17,8 +17,8 @@ public sealed record ClassSession
   /// <summary>How long the slot runs for.</summary>
   public required TimeSpan Duration { get; init; }
 
-  /// <summary>Whether the slot is delivered online.</summary>
-  public required bool IsRemote { get; init; }
+  /// <summary>Whether the slot is delivered online. Optional but never null: in person unless stated.</summary>
+  public bool IsRemote { get; init; }
 
   /// <summary>Room the slot is timetabled into, when it is not remote.</summary>
   public Room? Room { get; init; }

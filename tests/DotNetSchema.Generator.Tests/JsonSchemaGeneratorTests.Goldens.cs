@@ -10,9 +10,9 @@ public sealed partial class JsonSchemaGeneratorTests
   /// project README for how.
   /// </summary>
   [Theory]
-  [InlineData("assessment.json", "8155f5f7a5d141841ca72af64259f0636be5eb907b36061fbbfcf2c40d2ac6ce")]
+  [InlineData("assessment.json", "1fd5528e6f4af09bdc2fe8749ebc72ec9e44c8e692ffaa3d48797c5122b7abc9")]
   [InlineData("schema.json", "f81e546f34fd24b8063db573618f11627642a86a022b372eb1da75ad1b58b4c0")]
-  [InlineData("school.json", "62f30717bf3a95fe8cf427da77d9d02b08fba8c915c3c7fe457b682440e54660")]
+  [InlineData("school.json", "cea7e839d46af91211eb6c7a045c570b0da6d4c2d3676a3288ed600a3360f1ab")]
   public void EachDocument_ReproducesItsGoldenDigest(string fileName, string digest)
   {
     var document = new JsonSchemaGenerator()

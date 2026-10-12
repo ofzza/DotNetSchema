@@ -78,6 +78,24 @@ public sealed partial class FixturesService
   }
 
   /// <summary>
+  /// Keeps a generated value of a nullable scalar property, or replaces it with <c>null</c>, as
+  /// <see cref="FixtureOptions.OptionalFillRate" /> decides. The value is always drawn first, so the record's
+  /// own random stream advances exactly as it would for a non-nullable property, and presence is decided by a
+  /// seed derived from the property path instead — every other value of the record stays where it was.
+  /// </summary>
+  private static T? OrNull<T>(T value, FixtureSeed parent, string property, FixtureOptions options)
+      where T : class
+      => IsPresent(parent, property, options) ? value : null;
+
+  /// <inheritdoc cref="OrNull{T}" />
+  private static T? OrNullValue<T>(T value, FixtureSeed parent, string property, FixtureOptions options)
+      where T : struct
+      => IsPresent(parent, property, options) ? value : null;
+
+  private static bool IsPresent(FixtureSeed parent, string property, FixtureOptions options)
+      => new StableRandom(parent.Derive(property).Derive("$present").Value).NextBool(options.OptionalFillRate);
+
+  /// <summary>
   /// Generates a map of child entities keyed by an enum, where the key is also the child's own name —
   /// the school's departments and the library's catalogue. Keys are drawn without replacement, so the
   /// map is never quietly short of entries because two children happened to pick the same name.

@@ -14,11 +14,13 @@ public sealed record Campus
   /// <summary>Where the campus sits. A nested value record, always present.</summary>
   public required Address Address { get; init; }
 
-  /// <summary>Date the site opened to students.</summary>
-  public required DateOnly OpenedOn { get; init; }
+  /// <summary>
+  /// Date the site opened to students. Required but nullable: always stated, <c>null</c> when the records are lost.
+  /// </summary>
+  public required DateOnly? OpenedOn { get; init; }
 
-  /// <summary>Site area in hectares.</summary>
-  public required double AreaHectares { get; init; }
+  /// <summary>Site area in hectares. Optional but never null: <c>0</c> until surveyed.</summary>
+  public double AreaHectares { get; init; }
 
   /// <summary>Buildings on the site.</summary>
   public required IReadOnlyList<Building> Buildings { get; init; }

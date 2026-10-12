@@ -32,8 +32,10 @@ public sealed record Class
   /// <summary>Whether enrolment is still open.</summary>
   public required bool IsEnrollmentOpen { get; init; }
 
-  /// <summary>Course description as printed in the catalogue.</summary>
-  public required string Synopsis { get; init; }
+  /// <summary>
+  /// Course description as printed in the catalogue. Optional and nullable: a new offering may not have one yet.
+  /// </summary>
+  public string? Synopsis { get; init; }
 
   /// <summary>Member of staff leading the offering. Indirectly recursive: Class -> Person -> Class.</summary>
   public Person? Professor { get; init; }
@@ -44,8 +46,11 @@ public sealed record Class
   /// <summary>Prescribed materials. Indirectly recursive: Class -> Book -> Class.</summary>
   public required IReadOnlyList<Book> Materials { get; init; }
 
-  /// <summary>Offerings that must be passed first. Directly recursive: Class -> Class.</summary>
-  public required IReadOnlyList<Class> Prerequisites { get; init; }
+  /// <summary>
+  /// Offerings that must be passed first. Directly recursive: Class -> Class. Optional but never null: empty
+  /// for an entry-level offering.
+  /// </summary>
+  public IReadOnlyList<Class> Prerequisites { get; init; } = [];
 
   /// <summary>Weekly timetable of the offering.</summary>
   public required IReadOnlyList<ClassSession> Schedule { get; init; }

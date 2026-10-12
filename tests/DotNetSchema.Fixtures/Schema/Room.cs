@@ -17,8 +17,8 @@ public sealed record Room
   /// <summary>What the room is fitted out for.</summary>
   public required RoomKind Kind { get; init; }
 
-  /// <summary>Seating capacity.</summary>
-  public required ushort Seats { get; init; }
+  /// <summary>Seating capacity. Optional but never null: <c>0</c> for standing room.</summary>
+  public ushort Seats { get; init; }
 
   /// <summary>Floor the room is on; negative values are basement levels.</summary>
   public required sbyte Floor { get; init; }

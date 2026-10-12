@@ -14,11 +14,13 @@ public sealed record Exercise
   /// <summary>The question put to the student.</summary>
   public required string Prompt { get; init; }
 
-  /// <summary>Difficulty on a 1.0-5.0 scale.</summary>
-  public required float Difficulty { get; init; }
+  /// <summary>Difficulty on a 1.0-5.0 scale. Optional and nullable: unrated exercises carry none.</summary>
+  public float? Difficulty { get; init; }
 
-  /// <summary>Whether the worked solution is printed in the back of the book.</summary>
-  public required bool HasWorkedSolution { get; init; }
+  /// <summary>
+  /// Whether the worked solution is printed in the back of the book. Optional but never null: assumed not.
+  /// </summary>
+  public bool HasWorkedSolution { get; init; }
 
   /// <summary>Marks awarded for a correct answer.</summary>
   public required byte Marks { get; init; }

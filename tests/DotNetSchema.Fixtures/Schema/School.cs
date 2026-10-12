@@ -16,8 +16,8 @@ public sealed record School
   /// <summary>Registered name, e.g. "Northgate Preparatory Academy".</summary>
   public required string Name { get; init; }
 
-  /// <summary>Latin-ish motto printed on the crest.</summary>
-  public required string Motto { get; init; }
+  /// <summary>Latin-ish motto printed on the crest. Optional and nullable: not every school has one.</summary>
+  public string? Motto { get; init; }
 
   /// <summary>Date the charter was granted.</summary>
   public required DateOnly FoundedOn { get; init; }
@@ -25,8 +25,10 @@ public sealed record School
   /// <summary>Whether the current accreditation is in good standing.</summary>
   public required bool IsAccredited { get; init; }
 
-  /// <summary>Maximum number of enrolled students across all campuses.</summary>
-  public required ushort EnrollmentCap { get; init; }
+  /// <summary>
+  /// Maximum number of enrolled students across all campuses. Optional but never null: <c>0</c> means uncapped.
+  /// </summary>
+  public ushort EnrollmentCap { get; init; }
 
   /// <summary>Endowment, in the school's reporting currency.</summary>
   public required decimal Endowment { get; init; }
