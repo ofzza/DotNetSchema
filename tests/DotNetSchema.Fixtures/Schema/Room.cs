@@ -14,8 +14,8 @@ public sealed record Room
   /// <summary>Room code as printed on the door, e.g. "B-214".</summary>
   public required string Code { get; init; }
 
-  /// <summary>What the room is fitted out for.</summary>
-  public required RoomKind Kind { get; init; }
+  /// <summary>What the room is fitted out for. Required but nullable: <c>null</c> for an unclassified room.</summary>
+  public required RoomKind? Kind { get; init; }
 
   /// <summary>Seating capacity. Optional but never null: <c>0</c> for standing room.</summary>
   public ushort Seats { get; init; }

@@ -12,8 +12,10 @@ public sealed record Assessment
   /// <summary>Stable identity of the assessment.</summary>
   public required Guid Id { get; init; }
 
-  /// <summary>Form the assessment takes.</summary>
-  public required AssessmentKind Kind { get; init; }
+  /// <summary>
+  /// Form the assessment takes. Optional but never null: a <see cref="AssessmentKind.Quiz" /> unless stated.
+  /// </summary>
+  public AssessmentKind Kind { get; init; } = AssessmentKind.Quiz;
 
   /// <summary>Title as announced to students.</summary>
   public required string Title { get; init; }

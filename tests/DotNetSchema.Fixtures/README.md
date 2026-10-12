@@ -51,7 +51,8 @@ AssessmentRecord scalars = fixtures.GenerateAssessmentRecord(42);   // scalars o
 | Four or more levels of nesting | `School → Campus → Building → Room → Class → Book → Chapter → Section → Exercise` (9) |
 | Direct recursion | `School.SisterSchools`, `Person.Mentor`, `Person.Advisees`, `Class.Prerequisites`, `Department.SubDepartments`, `Chapter.SubChapters` |
 | Indirect recursion | `Class ↔ Book`, `Class ↔ Person`, `Class ↔ Room`, `Class ↔ Assessment` |
-| Required × nullable, all four combinations | see [Required and nullable](#required-and-nullable) |
+| Required × nullable, all four combinations, for scalars, arrays, maps, enums and model references | see [Required and nullable](#required-and-nullable) |
+| Every portable type nullable, as a value, as an array item and as a map value | `NullableScalarBattery`, `NullableScalarSeries`, `NullableScalarRegister` — see [Required and nullable](#required-and-nullable) |
 
 ### What counts as "portable"
 
@@ -144,7 +145,7 @@ record Building {
 
 record Room {
     Id, Code : Guid, string
-    Kind     : RoomKind
+    Kind     : RoomKind?
     Seats?   : ushort
     Floor    : sbyte                                        // negative = basement
     Classes  : Array<Class>                                 // ↻ indirect, back into Class
@@ -159,7 +160,7 @@ record Department {
     CostCentre?     : string
     AnnualBudget    : decimal?
     EstablishedOn   : DateOnly
-    Head?           : Person?
+    Head            : Person?
     Courses         : Array<Class>
     SubDepartments  : Array<Department>                     // ↺ direct recursion
 }
@@ -174,8 +175,8 @@ record Person {
     IsActive          : bool
     GradePointAverage : double?
     Classes           : Array<Class>                        // ↻ indirect: Person → Class → Person
-    Grades            : Map<ClassName, int>                 // map with an enum key
-    ContactMethods    : Map<string, string>
+    Grades?           : Map<ClassName, int>                 // map with an enum key
+    ContactMethods?   : Map<string, string>?
     Mentor?           : Person?                             // ↺ direct recursion
     Advisees?         : Array<Person>                       // ↺ direct recursion, across a collection
     Office?           : Room?                               // ↻ indirect: Person → Room → Class → Person
@@ -185,17 +186,17 @@ record Class {
     Id                 : Guid
     Name               : ClassName
     Code               : string
-    Term               : Term
+    Term?              : Term?
     AcademicYear       : ushort
     Credits            : double
     Seats              : byte
     IsEnrollmentOpen   : bool
     Synopsis?          : string?
-    Professor?         : Person?                            // ↻ indirect
+    Professor          : Person?                            // ↻ indirect
     Students           : Array<Person>                      // ↻ indirect
     Materials          : Array<Book>                        // ↻ indirect: Class → Book → Class
     Prerequisites?     : Array<Class>                       // ↺ direct recursion
-    Schedule           : Array<ClassSession>
+    Schedule?          : Array<ClassSession>?
     Assessments        : Array<Assessment>
     Room?              : Room?                              // ↻ indirect
 }
@@ -217,7 +218,7 @@ record Library {
     VolumeCount?  : uint
     OpensAt       : TimeOnly
     ClosesAt      : TimeOnly?                               // null = open around the clock
-    Catalogue     : Map<BookName, Book>                     // map of records, enum key
+    Catalogue     : Map<BookName, Book>?                    // map of records, enum key
     Librarians    : Array<Person>
     ReadingRooms  : Array<Room>
 }
@@ -232,7 +233,7 @@ record Book {
     PublishedOn        : DateOnly
     HasDigitalLicence? : bool
     Class?             : Class?                             // ↻ indirect: Book → Class → Book
-    Authors            : Array<Person>
+    Authors            : Array<Person>?
     Chapters           : Array<Chapter>
 }
 
@@ -265,7 +266,7 @@ record Exercise {
 
 record Assessment {
     Id            : Guid
-    Kind          : AssessmentKind
+    Kind?         : AssessmentKind
     Title         : string
     Weight        : decimal
     MaximumMarks  : ushort
@@ -279,6 +280,10 @@ record AssessmentRecord {
     Battery   : ScalarBattery      // every portable scalar, once
     Series    : ScalarSeries       // every portable scalar, in a collection
     Register  : ScalarRegister     // every portable scalar, in a map
+
+    NullableBattery   : NullableScalarBattery     // ... and all three again, nullable
+    NullableSeries    : NullableScalarSeries
+    NullableRegister  : NullableScalarRegister
 }
 
 record ScalarBattery {
@@ -326,6 +331,26 @@ record ScalarRegister {
     WeightByAssessmentKind  : Map<AssessmentKind, decimal>
     AttendanceByDate        : Map<DateOnly, ushort>
 }
+
+// The nullable twins: the same property names and types as the bundle each mirrors, with nullable values.
+
+record NullableScalarBattery {     // every property T?, alternately required and optional
+    IsProctored   : bool?          CurveAdjustment?   : sbyte?
+    RawScore      : byte?          SeatNumber?        : short?
+    ...
+}
+
+record NullableScalarSeries {      // every item T?; the series cycle R, O, RN, ON
+    AttemptedFlags   : Array<bool?>        CurveAdjustments?  : Array<sbyte?>
+    RawScores        : Array<byte?>?       SeatNumbers?       : Array<short?>?
+    ...
+}
+
+record NullableScalarRegister {    // every value T?; the maps cycle R, O, RN, ON
+    AnsweredByItem   : Map<string, bool?>      CurveByItem?   : Map<string, sbyte?>
+    RawScoreByItem   : Map<string, byte?>?     SeatByItem?    : Map<string, short?>?
+    ...
+}
 ```
 
 ### Graph
@@ -351,7 +376,7 @@ flowchart TD
     Exercise["Exercise"]
     Assessment["Assessment"]
     AssessmentRecord["AssessmentRecord<br/><i>value record</i>"]
-    Scalars["ScalarBattery + ScalarSeries + ScalarRegister<br/><i>all 20 portable primitives</i>"]
+    Scalars["ScalarBattery + ScalarSeries + ScalarRegister<br/>and their Nullable* twins<br/><i>all 20 portable primitives</i>"]
 
     School -->|"Campuses [n]"| Campus
     School -->|"Departments {DepartmentName}"| Department
@@ -429,25 +454,42 @@ since neither intermediate looks like it belongs to a person.
 ### Required and nullable
 
 Whether a property is `required` and whether it accepts `null` are separate questions — the schema's
-`required` follows the C# `required` modifier alone — so the school graph answers them in all four
-combinations, with at least one of each in most models. A consumer that turns the schema into types (for
-example [`tsschema`](https://www.npmjs.com/package/@ofzza/tsschema)) can therefore tell `x?: T` from
-`x: T | null`:
+`required` follows the C# `required` modifier alone — so the fixtures answer them in all four combinations,
+for every shape a property can take. A consumer that turns the schema into types (for example
+[`tsschema`](https://www.npmjs.com/package/@ofzza/tsschema)) can therefore tell `x?: T` from
+`x: T | null`.
 
-| C# | Schema | TypeScript | Examples |
-| --- | --- | --- | --- |
-| `required T X` | in `required`, plain type | `x: T` | everything not listed here |
-| `T X { get; init; }` (initialised) | not in `required`, plain type | `x?: T` | `School.EnrollmentCap`, `Department.CostCentre`, `Person.Advisees`, `Chapter.SubChapters`, `Assessment.IsOpenBook` |
-| `required T? X` | in `required`, `"type": [T, "null"]` | `x: T \| null` | `Campus.OpenedOn`, `Person.GradePointAverage`, `Book.Isbn`, `Section.Heading`, `Assessment.DueAt` |
-| `T? X` | not in `required`, `"type": [T, "null"]` or `anyOf` with `null` | `x?: T \| null` | `School.Motto`, `Person.Email`, `Exercise.Difficulty`; every nullable model reference (`School.Library`, `Person.Mentor`, …) |
+| | Required, non-null<br/>`required T X` → `x: T` | Optional, non-null<br/>`T X { get; init; } = …` → `x?: T` | Required, nullable<br/>`required T? X` → `x: T \| null` | Optional, nullable<br/>`T? X` → `x?: T \| null` |
+| --- | --- | --- | --- | --- |
+| scalar | most | `School.EnrollmentCap`, `Department.CostCentre`, `Assessment.IsOpenBook`, … | `Campus.OpenedOn`, `Person.GradePointAverage`, `Book.Isbn`, … | `School.Motto`, `Person.Email`, `Exercise.Difficulty`, … |
+| array | most | `Person.Advisees`, `Class.Prerequisites`, `Chapter.SubChapters` | `Book.Authors` | `Class.Schedule` |
+| map | most | `Person.Grades` | `Library.Catalogue` | `Person.ContactMethods` |
+| enum | most | `Assessment.Kind` | `Room.Kind` | `Class.Term` |
+| model | most | — | `Department.Head`, `Class.Professor` | `School.Library`, `Person.Mentor`, `Person.Office`, … |
+
+There is no optional, non-null model reference: a record with `required` members cannot be
+default-initialised, so that combination has no C# form to describe.
+
+In the schema, a nullable `$ref` (model or enum) is `{"anyOf": [{"$ref": …}, {"type": "null"}]}`; anything
+else is `"type": [T, "null"]`.
+
+The plain scalar bundles stay the required, non-null baseline. Each has a **nullable twin** with exactly the
+same property names, hung off `AssessmentRecord`:
+
+- `NullableScalarBattery` — every property `T?`, alternately `required` and optional;
+- `NullableScalarSeries` — every series holds `T?` items (`Array<T | null>`), and the series themselves
+  cycle by ordinal through the four combinations above;
+- `NullableScalarRegister` — every map holds `T?` values (`Record<K, T | null>`), the maps cycling likewise.
+  Keys stay non-null: System.Text.Json cannot write a null property name.
 
 The full lists live in
-[`JsonSchemaGeneratorTests.Nullability.cs`](../DotNetSchema.Generator.Tests/JsonSchemaGeneratorTests.Nullability.cs).
-The three scalar bundles and `AssessmentRecord` stay fully required: their job is type coverage.
+[`JsonSchemaGeneratorTests.Nullability.cs`](../DotNetSchema.Generator.Tests/JsonSchemaGeneratorTests.Nullability.cs),
+and the twins are checked there by rule.
 
-The generator always sets the optional, non-null properties (System.Text.Json writes them regardless), and
-fills each nullable property at `OptionalFillRate`, deciding from a seed derived from the property's path
-so the record's other values do not move.
+The generator always sets the optional, non-null properties (System.Text.Json writes them regardless). It
+fills each nullable property, item and map value at `OptionalFillRate`, deciding from a seed derived from its
+path, so the record's other values do not move; a twin is a plain bundle with values knocked out, so it
+agrees with the plain bundle drawn from the same seed wherever it is not `null`.
 
 ---
 
@@ -535,7 +577,7 @@ most `n` entity edges from the root, plus one more if the last node is a back-re
 | `MinCollectionSize` / `MaxCollectionSize` | `1` / `3` | Elements per collection |
 | `MapSize` | `3` | Entries per map |
 | `SeriesLength` | `4` | Elements per scalar series (the binary blob gets `8×`) |
-| `OptionalFillRate` | `0.75` | Chance a nullable property (a reference or a scalar) is filled rather than `null` |
+| `OptionalFillRate` | `0.75` | Chance a nullable property, array item or map value is filled rather than `null` |
 | `BackReferenceDepth` | `0` | Budget granted to a back-reference |
 
 Breadth is cheap; depth is not. Cost grows by roughly an order of magnitude per level, so the default
@@ -629,7 +671,7 @@ Generation/
   FixtureOptions      depth and breadth
   FixtureVocabulary   word banks, so fixtures read like a prospectus
   IFixturesService    the public surface
-  FixturesService     .cs domain generation · .Graph.cs traversal · .Scalars.cs the scalar bundles
+  FixturesService     .cs domain generation · .Graph.cs traversal · .Scalars.cs the scalar bundles and their nullable twins
   StableRandom        the deterministic value source (SplitMix64)
 ```
 

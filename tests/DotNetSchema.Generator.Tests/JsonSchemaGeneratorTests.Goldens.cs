@@ -10,9 +10,9 @@ public sealed partial class JsonSchemaGeneratorTests
   /// project README for how.
   /// </summary>
   [Theory]
-  [InlineData("assessment.json", "1fd5528e6f4af09bdc2fe8749ebc72ec9e44c8e692ffaa3d48797c5122b7abc9")]
+  [InlineData("assessment.json", "c471b903cc674039c2d311a8c4d6b5af4816e83e8cc9a44a71cb62845184483e")]
   [InlineData("schema.json", "f81e546f34fd24b8063db573618f11627642a86a022b372eb1da75ad1b58b4c0")]
-  [InlineData("school.json", "cea7e839d46af91211eb6c7a045c570b0da6d4c2d3676a3288ed600a3360f1ab")]
+  [InlineData("school.json", "22130bfc5b701d819ba053fccc6fcc66b18fac18d359e4299d2b203524addcbc")]
   public void EachDocument_ReproducesItsGoldenDigest(string fileName, string digest)
   {
     var document = new JsonSchemaGenerator()
@@ -117,7 +117,7 @@ public sealed partial class JsonSchemaGeneratorTests
       """{"type":"array","items":{"$ref":"#/$defs/Person"}}""",
       Compact(Property(person, "advisees")));
     Assert.Equal(
-      """{"type":"object","additionalProperties":{"type":"string"}}""",
+      """{"type":["object","null"],"additionalProperties":{"type":"string"}}""",
       Compact(Property(person, "contactMethods")));
   }
 

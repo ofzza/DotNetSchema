@@ -25,7 +25,7 @@ DotNetSchema.Generator.Tests/
   JsonSchemaGeneratorTests.cs               shared helpers, and the testing marker
   JsonSchemaGeneratorTests.Discovery.cs     which types are found, and which document each lands in
   JsonSchemaGeneratorTests.Mapping.cs       the scalar table and the dictionary key table
-  JsonSchemaGeneratorTests.Nullability.cs   required × nullable in all four combinations, and nothing else
+  JsonSchemaGeneratorTests.Nullability.cs   required × nullable in all four combinations, every shape, and the twins
   JsonSchemaGeneratorTests.Recursion.cs     cycles, the full closure, and no bare objects
   JsonSchemaGeneratorTests.Determinism.cs   metadata-only vs runtime; newlines; no BOM
   JsonSchemaGeneratorTests.Goldens.cs       whole documents by digest, salient definitions verbatim

@@ -37,8 +37,8 @@ public sealed record Book
   /// <summary>The offering that prescribes the title. Indirectly recursive: Book -> Class -> Book.</summary>
   public Class? Class { get; init; }
 
-  /// <summary>Authors of the title.</summary>
-  public required IReadOnlyList<Person> Authors { get; init; }
+  /// <summary>Authors of the title. Required but nullable: <c>null</c> when the title is unattributed.</summary>
+  public required IReadOnlyList<Person>? Authors { get; init; }
 
   /// <summary>Table of contents.</summary>
   public required IReadOnlyList<Chapter> Chapters { get; init; }

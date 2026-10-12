@@ -23,8 +23,8 @@ public sealed record Department
   /// <summary>Date of the department's founding.</summary>
   public required DateOnly EstablishedOn { get; init; }
 
-  /// <summary>Head of department, when the post is filled.</summary>
-  public Person? Head { get; init; }
+  /// <summary>Head of department. Required but nullable: always stated, <c>null</c> while the post is vacant.</summary>
+  public required Person? Head { get; init; }
 
   /// <summary>Class offerings the department runs.</summary>
   public required IReadOnlyList<Class> Courses { get; init; }

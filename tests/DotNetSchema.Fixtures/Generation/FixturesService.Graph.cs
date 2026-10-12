@@ -85,15 +85,67 @@ public sealed partial class FixturesService
   /// </summary>
   private static T? OrNull<T>(T value, FixtureSeed parent, string property, FixtureOptions options)
       where T : class
-      => IsPresent(parent, property, options) ? value : null;
+      => IsPresent(parent.Derive(property), options) ? value : null;
 
   /// <inheritdoc cref="OrNull{T}" />
   private static T? OrNullValue<T>(T value, FixtureSeed parent, string property, FixtureOptions options)
       where T : struct
-      => IsPresent(parent, property, options) ? value : null;
+      => IsPresent(parent.Derive(property), options) ? value : null;
 
-  private static bool IsPresent(FixtureSeed parent, string property, FixtureOptions options)
-      => new StableRandom(parent.Derive(property).Derive("$present").Value).NextBool(options.OptionalFillRate);
+  /// <summary>
+  /// Copies a generated series with some of its items replaced by <c>null</c>, each item's fate decided by a
+  /// seed derived from the property path and the item's ordinal. The items themselves are untouched, so a
+  /// nullable twin agrees with the plain series it was made from wherever it is not <c>null</c>.
+  /// </summary>
+  private static IReadOnlyList<T?> OrNullItems<T>(
+      IReadOnlyList<T> items,
+      FixtureSeed parent,
+      string property,
+      FixtureOptions options)
+      where T : class
+      => [.. items.Select((item, i) => IsPresent(parent.Derive(property, i), options) ? item : null)];
+
+  /// <inheritdoc cref="OrNullItems{T}" />
+  private static IReadOnlyList<T?> OrNullValueItems<T>(
+      IReadOnlyList<T> items,
+      FixtureSeed parent,
+      string property,
+      FixtureOptions options)
+      where T : struct
+      => [.. items.Select((item, i) => IsPresent(parent.Derive(property, i), options) ? item : (T?)null)];
+
+  /// <summary>
+  /// Copies a generated map with some of its values replaced by <c>null</c>, decided per entry as
+  /// <see cref="OrNullItems{T}" /> decides per item. Keys and their order are kept as generated.
+  /// </summary>
+  private static IReadOnlyDictionary<TKey, TValue?> OrNullEntries<TKey, TValue>(
+      IReadOnlyDictionary<TKey, TValue> map,
+      FixtureSeed parent,
+      string property,
+      FixtureOptions options)
+      where TKey : notnull
+      where TValue : class
+      => new Dictionary<TKey, TValue?>(
+        map.Select((entry, i) => KeyValuePair.Create(
+          entry.Key,
+          IsPresent(parent.Derive(property, i), options) ? entry.Value : null)));
+
+  /// <inheritdoc cref="OrNullEntries{TKey, TValue}" />
+  private static IReadOnlyDictionary<TKey, TValue?> OrNullValueEntries<TKey, TValue>(
+      IReadOnlyDictionary<TKey, TValue> map,
+      FixtureSeed parent,
+      string property,
+      FixtureOptions options)
+      where TKey : notnull
+      where TValue : struct
+      => new Dictionary<TKey, TValue?>(
+        map.Select((entry, i) => KeyValuePair.Create(
+          entry.Key,
+          IsPresent(parent.Derive(property, i), options) ? entry.Value : (TValue?)null)));
+
+  /// <summary>Whether the value at a path is kept, at <see cref="FixtureOptions.OptionalFillRate" />.</summary>
+  private static bool IsPresent(FixtureSeed path, FixtureOptions options)
+      => new StableRandom(path.Derive("$present").Value).NextBool(options.OptionalFillRate);
 
   /// <summary>
   /// Generates a map of child entities keyed by an enum, where the key is also the child's own name —

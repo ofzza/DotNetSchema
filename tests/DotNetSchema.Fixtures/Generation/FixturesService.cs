@@ -187,7 +187,7 @@ public sealed partial class FixturesService : IFixturesService
       Code = string.Create(
             CultureInfo.InvariantCulture,
             $"{random.NextChar("ABCDE")}-{random.NextInt32(1, 5)}{random.NextInt32(0, 40):00}"),
-      Kind = random.PickEnum<RoomKind>(),
+      Kind = OrNullValue(random.PickEnum<RoomKind>(), seed, nameof(Room.Kind), options),
       Seats = random.NextUInt16(8, 320),
       Floor = random.NextSByte(-2, 8),
       Classes = GenerateList(seed, nameof(Room.Classes), budget, options, (s, b) => GenerateClass(s, b, options))
@@ -271,7 +271,11 @@ public sealed partial class FixturesService : IFixturesService
             options),
       Classes = classes,
       Grades = GenerateGrades(seed.Derive(nameof(Person.Grades)), classes, options),
-      ContactMethods = GenerateContactMethods(seed.Derive(nameof(Person.ContactMethods)), options),
+      ContactMethods = OrNull(
+            GenerateContactMethods(seed.Derive(nameof(Person.ContactMethods)), options),
+            seed,
+            nameof(Person.ContactMethods),
+            options),
       Mentor = GenerateOptional(
             seed,
             nameof(Person.Mentor),
@@ -353,7 +357,7 @@ public sealed partial class FixturesService : IFixturesService
             CultureInfo.InvariantCulture,
             $"{className.ToString()[..3].ToUpperInvariant()}-{random.NextInt32(100, 500)}"
             + $"-{random.NextChar("ABC")}"),
-      Term = random.PickEnum<Term>(),
+      Term = OrNullValue(random.PickEnum<Term>(), seed, nameof(Class.Term), options),
       AcademicYear = random.NextUInt16(2019, 2027),
       Credits = random.NextDouble(1d, 12d, 1),
       Seats = random.NextByte(6, 200),
@@ -383,12 +387,16 @@ public sealed partial class FixturesService : IFixturesService
             budget,
             options,
             (s, b) => GenerateClass(s, b, options)),
-      Schedule = GenerateList(
+      Schedule = OrNull(
+            GenerateList(
+                seed,
+                nameof(Class.Schedule),
+                budget,
+                options,
+                (s, b) => GenerateClassSession(s, b, options)),
             seed,
             nameof(Class.Schedule),
-            budget,
-            options,
-            (s, b) => GenerateClassSession(s, b, options)),
+            options),
       Assessments = GenerateList(
             seed,
             nameof(Class.Assessments),
@@ -455,12 +463,16 @@ public sealed partial class FixturesService : IFixturesService
       PublishedOn = random.NextDateOnly(new DateOnly(1960, 1, 1), 23_000),
       HasDigitalLicence = random.NextBool(0.55d),
       Class = prescribedBy,
-      Authors = GenerateList(
+      Authors = OrNull(
+            GenerateList(
+                seed,
+                nameof(Book.Authors),
+                budget,
+                options,
+                (s, b) => GeneratePerson(s, b, options, PersonRole.Professor)),
             seed,
             nameof(Book.Authors),
-            budget,
-            options,
-            (s, b) => GeneratePerson(s, b, options, PersonRole.Professor)),
+            options),
       Chapters = GenerateList(
             seed,
             nameof(Book.Chapters),
@@ -553,12 +565,16 @@ public sealed partial class FixturesService : IFixturesService
       VolumeCount = (uint)random.NextInt64(1_200L, 2_400_000L),
       OpensAt = opensAt,
       ClosesAt = OrNullValue(opensAt.AddHours(random.NextInt32(8, 15)), seed, nameof(Library.ClosesAt), options),
-      Catalogue = GenerateKeyedMap<BookName, Book>(
+      Catalogue = OrNull(
+            GenerateKeyedMap<BookName, Book>(
+                seed,
+                nameof(Library.Catalogue),
+                budget,
+                options,
+                (s, b, name) => GenerateBook(s, b, options, name)),
             seed,
             nameof(Library.Catalogue),
-            budget,
-            options,
-            (s, b, name) => GenerateBook(s, b, options, name)),
+            options),
       Librarians = GenerateList(
             seed,
             nameof(Library.Librarians),

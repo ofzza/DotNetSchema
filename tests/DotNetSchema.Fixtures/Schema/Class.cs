@@ -17,8 +17,8 @@ public sealed record Class
   /// <summary>Catalogue code, e.g. "MAT-201-A".</summary>
   public required string Code { get; init; }
 
-  /// <summary>Term the offering runs in.</summary>
-  public required Term Term { get; init; }
+  /// <summary>Term the offering runs in. Optional and nullable: an offering that runs all year has none.</summary>
+  public Term? Term { get; init; }
 
   /// <summary>Academic year the term belongs to.</summary>
   public required ushort AcademicYear { get; init; }
@@ -37,8 +37,11 @@ public sealed record Class
   /// </summary>
   public string? Synopsis { get; init; }
 
-  /// <summary>Member of staff leading the offering. Indirectly recursive: Class -> Person -> Class.</summary>
-  public Person? Professor { get; init; }
+  /// <summary>
+  /// Member of staff leading the offering. Indirectly recursive: Class -> Person -> Class. Required but
+  /// nullable: always stated, <c>null</c> while still to be announced.
+  /// </summary>
+  public required Person? Professor { get; init; }
 
   /// <summary>Enrolled students. Indirectly recursive across a collection.</summary>
   public required IReadOnlyList<Person> Students { get; init; }
@@ -52,8 +55,8 @@ public sealed record Class
   /// </summary>
   public IReadOnlyList<Class> Prerequisites { get; init; } = [];
 
-  /// <summary>Weekly timetable of the offering.</summary>
-  public required IReadOnlyList<ClassSession> Schedule { get; init; }
+  /// <summary>Weekly timetable of the offering. Optional and nullable: not every offering is timetabled yet.</summary>
+  public IReadOnlyList<ClassSession>? Schedule { get; init; }
 
   /// <summary>Graded work set for the offering.</summary>
   public required IReadOnlyList<Assessment> Assessments { get; init; }

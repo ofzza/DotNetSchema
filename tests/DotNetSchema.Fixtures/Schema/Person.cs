@@ -38,11 +38,17 @@ public sealed record Person
   /// <summary>Class offerings attended or taught. Indirectly recursive: Person -> Class -> Person.</summary>
   public required IReadOnlyList<Class> Classes { get; init; }
 
-  /// <summary>Marks per class, on a 1-100 scale. A map keyed by an enum.</summary>
-  public required IReadOnlyDictionary<ClassName, int> Grades { get; init; }
+  /// <summary>
+  /// Marks per class, on a 1-100 scale. A map keyed by an enum. Optional but never null: empty before any
+  /// class has been marked.
+  /// </summary>
+  public IReadOnlyDictionary<ClassName, int> Grades { get; init; } = new Dictionary<ClassName, int>();
 
-  /// <summary>Free-form contact channels, e.g. "mobile" -> "+385 91 ...". A string-to-string map.</summary>
-  public required IReadOnlyDictionary<string, string> ContactMethods { get; init; }
+  /// <summary>
+  /// Free-form contact channels, e.g. "mobile" -> "+385 91 ...". A string-to-string map. Optional and
+  /// nullable: not everyone has left contact details.
+  /// </summary>
+  public IReadOnlyDictionary<string, string>? ContactMethods { get; init; }
 
   /// <summary>Academic mentor. Directly recursive: Person -> Person.</summary>
   public Person? Mentor { get; init; }

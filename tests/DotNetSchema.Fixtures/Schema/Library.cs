@@ -24,8 +24,11 @@ public sealed record Library
   /// </summary>
   public required TimeOnly? ClosesAt { get; init; }
 
-  /// <summary>Holdings, keyed by title — a nested map of another record.</summary>
-  public required IReadOnlyDictionary<BookName, Book> Catalogue { get; init; }
+  /// <summary>
+  /// Holdings, keyed by title — a nested map of another record. Required but nullable: <c>null</c> until
+  /// the holdings have been catalogued.
+  /// </summary>
+  public required IReadOnlyDictionary<BookName, Book>? Catalogue { get; init; }
 
   /// <summary>Librarians on staff.</summary>
   public required IReadOnlyList<Person> Librarians { get; init; }
