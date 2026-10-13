@@ -14,8 +14,9 @@ public sealed partial class JsonSchemaGeneratorTests
       [
         "Address", "Assessment", "AssessmentKind", "AssessmentRecord", "Book", "BookName", "Building",
         "Campus", "Chapter", "Class", "ClassName", "ClassSession", "DayOfWeek", "Department",
-        "DepartmentName", "Exercise", "Library", "Person", "PersonRole", "Room", "RoomKind",
-        "ScalarBattery", "ScalarRegister", "ScalarSeries", "School", "Section", "Term",
+        "DepartmentName", "Exercise", "Library", "NullableScalarBattery", "NullableScalarRegister",
+        "NullableScalarSeries", "Person", "PersonRole", "Room", "RoomKind", "ScalarBattery", "ScalarRegister",
+        "ScalarSeries", "School", "Section", "Term",
       ],
       definitions);
   }

@@ -18,12 +18,14 @@ public sealed record Chapter
   /// <summary>Page the chapter starts on.</summary>
   public required ushort StartPage { get; init; }
 
-  /// <summary>Estimated reading time.</summary>
-  public required TimeSpan EstimatedReadingTime { get; init; }
+  /// <summary>Estimated reading time. Optional and nullable: not every publisher states one.</summary>
+  public TimeSpan? EstimatedReadingTime { get; init; }
 
   /// <summary>Body of the chapter.</summary>
   public required IReadOnlyList<Section> Sections { get; init; }
 
-  /// <summary>Nested chapters. Directly recursive: Chapter -> Chapter.</summary>
-  public required IReadOnlyList<Chapter> SubChapters { get; init; }
+  /// <summary>
+  /// Nested chapters. Directly recursive: Chapter -> Chapter. Optional but never null: empty for a flat chapter.
+  /// </summary>
+  public IReadOnlyList<Chapter> SubChapters { get; init; } = [];
 }

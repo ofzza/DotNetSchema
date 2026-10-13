@@ -66,6 +66,9 @@ public sealed record ScalarSeries
   /// <summary><c>DateTimeOffset</c> — moment each item was saved, with the sitting's local offset.</summary>
   public required IReadOnlyList<DateTimeOffset> SavedAt { get; init; }
 
-  /// <summary><c>byte[]</c> — scanned answer sheet, as an opaque binary payload.</summary>
-  public required IReadOnlyList<byte> AnswerSheetScan { get; init; }
+  /// <summary>
+  /// <c>byte[]</c> — scanned answer sheet, as an opaque binary payload. Deliberately an array rather than a
+  /// list: System.Text.Json writes <c>byte[]</c> as a base64 string, but a list of bytes as numbers.
+  /// </summary>
+  public required byte[] AnswerSheetScan { get; init; }
 }

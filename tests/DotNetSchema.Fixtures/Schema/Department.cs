@@ -14,17 +14,17 @@ public sealed record Department
   /// <summary>Which faculty this is.</summary>
   public required DepartmentName Name { get; init; }
 
-  /// <summary>Internal cost-centre code.</summary>
-  public required string CostCentre { get; init; }
+  /// <summary>Internal cost-centre code. Optional but never null: empty when none is assigned.</summary>
+  public string CostCentre { get; init; } = "";
 
-  /// <summary>Annual operating budget.</summary>
-  public required decimal AnnualBudget { get; init; }
+  /// <summary>Annual operating budget. Required but nullable: <c>null</c> until the budget is approved.</summary>
+  public required decimal? AnnualBudget { get; init; }
 
   /// <summary>Date of the department's founding.</summary>
   public required DateOnly EstablishedOn { get; init; }
 
-  /// <summary>Head of department, when the post is filled.</summary>
-  public Person? Head { get; init; }
+  /// <summary>Head of department. Required but nullable: always stated, <c>null</c> while the post is vacant.</summary>
+  public required Person? Head { get; init; }
 
   /// <summary>Class offerings the department runs.</summary>
   public required IReadOnlyList<Class> Courses { get; init; }

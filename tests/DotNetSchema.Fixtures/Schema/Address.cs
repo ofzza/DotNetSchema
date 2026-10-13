@@ -11,8 +11,8 @@ public sealed record Address
   /// <summary>Town or city.</summary>
   public required string City { get; init; }
 
-  /// <summary>Postal / ZIP code.</summary>
-  public required string PostalCode { get; init; }
+  /// <summary>Postal / ZIP code. Optional and nullable: not every country uses one.</summary>
+  public string? PostalCode { get; init; }
 
   /// <summary>ISO 3166-1 alpha-2 country code.</summary>
   public required string CountryCode { get; init; }
