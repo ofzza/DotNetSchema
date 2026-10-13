@@ -91,15 +91,19 @@ public sealed partial class JsonSchemaGeneratorTests
   }
 
   [Fact]
-  public void AListOfBytes_IsAnArrayOfIntegers_NotBase64()
+  public void AByteArray_IsBase64_ButAListOfBytesIsAnArrayOfIntegers()
   {
-    // IReadOnlyList<byte> is not byte[], so System.Text.Json writes a number array. AnswerSheetScan is
-    // semantically a binary blob, but nothing in the metadata says so, and inventing contentEncoding here
-    // would describe output the serialiser does not produce.
+    // System.Text.Json writes byte[] as a base64 string, but IReadOnlyList<byte> as a number array. The two
+    // must not be confused either way: contentEncoding on a list would describe output the serialiser does
+    // not produce, and an array schema for byte[] would reject what it does.
     var series = Definition("ScalarSeries", typeof(ScalarSeries));
 
-    Assert.Equal(Compact(Property(series, "rawScores")), Compact(Property(series, "answerSheetScan")));
-    Assert.Equal("array", Property(series, "answerSheetScan")["type"]!.GetValue<string>());
+    Assert.Equal(
+      """{"type":"string","contentEncoding":"base64"}""",
+      Compact(Property(series, "answerSheetScan")));
+    Assert.Equal(
+      """{"type":"array","items":{"type":"integer","minimum":0,"maximum":255}}""",
+      Compact(Property(series, "rawScores")));
   }
 
   [Fact]

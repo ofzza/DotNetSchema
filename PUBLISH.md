@@ -1,6 +1,6 @@
 # Publishing
 
-How to release a new version of the `DotNetSchema` package to NuGet. Releases are cut from `develop` and published from `master`, following the branching model in [AGENTS.md](./AGENTS.md#branching).
+How to release a new version of the [`DotNetSchema` package](https://www.nuget.org/packages/DotNetSchema/) to NuGet. Releases are cut from `develop` and published from `master`, following the branching model in [AGENTS.md](./AGENTS.md#branching).
 
 A version published to nuget.org can never be overwritten or deleted — only unlisted, and an unlisted version can still be restored by anyone who names it. Treat every push as permanent.
 
@@ -135,7 +135,7 @@ It passes when:
 
    If symbol packages are enabled, `dotnet nuget push` picks up the `.snupkg` next to the `.nupkg` automatically.
 
-6. **Verify the release.** nuget.org validates and indexes a new version over several minutes. Once `curl -s https://api.nuget.org/v3-flatcontainer/dotnetschema/index.json` lists it, re-run the [consumer smoke test](#consumer-smoke-test) with the `local` source removed from `nuget.config`, so the package comes from nuget.org. Check that the README renders on `https://www.nuget.org/packages/DotNetSchema/<version>` with working links.
+6. **Verify the release.** nuget.org validates and indexes a new version over several minutes. Once `curl -s https://api.nuget.org/v3-flatcontainer/dotnetschema/index.json` lists it, re-run the [consumer smoke test](#consumer-smoke-test) with the `local` source removed from `nuget.config`, so the package comes from nuget.org. Check that the version is listed on the [package page](https://www.nuget.org/packages/DotNetSchema/) and that the README renders on `https://www.nuget.org/packages/DotNetSchema/<version>` with working links.
 
 7. **Switch back to `develop`** to continue work:
 

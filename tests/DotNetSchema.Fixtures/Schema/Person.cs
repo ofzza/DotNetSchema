@@ -23,29 +23,41 @@ public sealed record Person
   /// <summary>Date of birth.</summary>
   public required DateOnly BornOn { get; init; }
 
-  /// <summary>School e-mail address.</summary>
-  public required string Email { get; init; }
+  /// <summary>School e-mail address. Optional and nullable: not everyone has been issued one.</summary>
+  public string? Email { get; init; }
 
   /// <summary>Whether the person's record is currently active.</summary>
   public required bool IsActive { get; init; }
 
-  /// <summary>Grade point average across all completed classes.</summary>
-  public required double GradePointAverage { get; init; }
+  /// <summary>
+  /// Grade point average across all completed classes. Required but nullable: <c>null</c> before the first
+  /// class is completed.
+  /// </summary>
+  public required double? GradePointAverage { get; init; }
 
   /// <summary>Class offerings attended or taught. Indirectly recursive: Person -> Class -> Person.</summary>
   public required IReadOnlyList<Class> Classes { get; init; }
 
-  /// <summary>Marks per class, on a 1-100 scale. A map keyed by an enum.</summary>
-  public required IReadOnlyDictionary<ClassName, int> Grades { get; init; }
+  /// <summary>
+  /// Marks per class, on a 1-100 scale. A map keyed by an enum. Optional but never null: empty before any
+  /// class has been marked.
+  /// </summary>
+  public IReadOnlyDictionary<ClassName, int> Grades { get; init; } = new Dictionary<ClassName, int>();
 
-  /// <summary>Free-form contact channels, e.g. "mobile" -> "+385 91 ...". A string-to-string map.</summary>
-  public required IReadOnlyDictionary<string, string> ContactMethods { get; init; }
+  /// <summary>
+  /// Free-form contact channels, e.g. "mobile" -> "+385 91 ...". A string-to-string map. Optional and
+  /// nullable: not everyone has left contact details.
+  /// </summary>
+  public IReadOnlyDictionary<string, string>? ContactMethods { get; init; }
 
   /// <summary>Academic mentor. Directly recursive: Person -> Person.</summary>
   public Person? Mentor { get; init; }
 
-  /// <summary>People mentored by this person. Directly recursive across a collection.</summary>
-  public required IReadOnlyList<Person> Advisees { get; init; }
+  /// <summary>
+  /// People mentored by this person. Directly recursive across a collection. Optional but never null: empty
+  /// for anyone who mentors nobody.
+  /// </summary>
+  public IReadOnlyList<Person> Advisees { get; init; } = [];
 
   /// <summary>
   /// Assigned office or home room, if any. Indirectly recursive: Person -> Room -> Class -> Person.

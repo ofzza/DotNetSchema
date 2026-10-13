@@ -12,8 +12,10 @@ public sealed record Assessment
   /// <summary>Stable identity of the assessment.</summary>
   public required Guid Id { get; init; }
 
-  /// <summary>Form the assessment takes.</summary>
-  public required AssessmentKind Kind { get; init; }
+  /// <summary>
+  /// Form the assessment takes. Optional but never null: a <see cref="AssessmentKind.Quiz" /> unless stated.
+  /// </summary>
+  public AssessmentKind Kind { get; init; } = AssessmentKind.Quiz;
 
   /// <summary>Title as announced to students.</summary>
   public required string Title { get; init; }
@@ -24,11 +26,15 @@ public sealed record Assessment
   /// <summary>Marks available.</summary>
   public required ushort MaximumMarks { get; init; }
 
-  /// <summary>Moment the submission window closes.</summary>
-  public required DateTimeOffset DueAt { get; init; }
+  /// <summary>
+  /// Moment the submission window closes. Required but nullable: <c>null</c> for a rolling submission.
+  /// </summary>
+  public required DateTimeOffset? DueAt { get; init; }
 
-  /// <summary>Whether students may consult their materials.</summary>
-  public required bool IsOpenBook { get; init; }
+  /// <summary>
+  /// Whether students may consult their materials. Optional but never null: closed book unless stated.
+  /// </summary>
+  public bool IsOpenBook { get; init; }
 
   /// <summary>The offering the work was set for. Indirectly recursive: Assessment -> Class -> Assessment.</summary>
   public Class? Class { get; init; }

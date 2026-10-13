@@ -1,5 +1,7 @@
 # DotNetSchema
 
+[![NuGet](https://img.shields.io/nuget/vpre/DotNetSchema)](https://www.nuget.org/packages/DotNetSchema/)
+
 Mark a data model, build the host project, get a JSON Schema.
 
 ```csharp
@@ -30,7 +32,7 @@ metadata-only: no code from your project is executed to produce them.
 
 ## Getting started
 
-Reference the package wherever you declare models:
+Reference the [`DotNetSchema` package](https://www.nuget.org/packages/DotNetSchema/) wherever you declare models:
 
 ```xml
 <PackageReference Include="DotNetSchema" Version="0.1.0-alpha.1" />
