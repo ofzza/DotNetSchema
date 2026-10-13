@@ -35,7 +35,7 @@ metadata-only: no code from your project is executed to produce them.
 Reference the [`DotNetSchema` package](https://www.nuget.org/packages/DotNetSchema/) wherever you declare models:
 
 ```xml
-<PackageReference Include="DotNetSchema" Version="0.1.0-alpha.1" />
+<PackageReference Include="DotNetSchema" Version="0.1.0-alpha.2" />
 ```
 
 Then opt in, in the **host** project — the one that should own the documents:
