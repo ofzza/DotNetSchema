@@ -52,6 +52,7 @@ AssessmentRecord scalars = fixtures.GenerateAssessmentRecord(42);   // scalars o
 | Direct recursion | `School.SisterSchools`, `Person.Mentor`, `Person.Advisees`, `Class.Prerequisites`, `Department.SubDepartments`, `Chapter.SubChapters` |
 | Indirect recursion | `Class ↔ Book`, `Class ↔ Person`, `Class ↔ Room`, `Class ↔ Assessment` |
 | Required × nullable, all four combinations, for scalars, arrays, maps, enums and model references | see [Required and nullable](#required-and-nullable) |
+| `[JsonRequired]` in place of the `required` modifier | `Book.Isbn` |
 | Every portable type nullable, as a value, as an array item and as a map value | `NullableScalarBattery`, `NullableScalarSeries`, `NullableScalarRegister` — see [Required and nullable](#required-and-nullable) |
 
 ### What counts as "portable"
@@ -226,7 +227,7 @@ record Library {
 record Book {
     Id                 : Guid
     Name               : BookName
-    Isbn               : string?
+    Isbn               : string?                            // [JsonRequired], not the modifier
     Edition            : byte
     PageCount          : ushort
     Price              : decimal
@@ -455,8 +456,9 @@ since neither intermediate looks like it belongs to a person.
 ### Required and nullable
 
 Whether a property is `required` and whether it accepts `null` are separate questions — the schema's
-`required` follows the C# `required` modifier alone — so the fixtures answer them in all four combinations,
-for every shape a property can take. A consumer that turns the schema into types (for example
+`required` follows the C# `required` modifier or `[JsonRequired]` alone — so the fixtures answer them in all
+four combinations, for every shape a property can take. `Book.Isbn` is the one property marked with
+`[JsonRequired]` instead of the modifier. A consumer that turns the schema into types (for example
 [`tsschema`](https://www.npmjs.com/package/@ofzza/tsschema)) can therefore tell `x?: T` from
 `x: T | null`.
 

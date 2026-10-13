@@ -103,8 +103,9 @@ its siblings, so `{"$ref":…,"type":"null"}` demands both at once and nothing s
 scalar instead takes a second entry in its `type` array, which is safe because `format`, `pattern` and
 the numeric bounds are all type-conditional.
 
-**`required`** follows the C# `required` modifier and nothing else. Nullability is a separate question:
-a required member may still accept null, and an optional one may not.
+**`required`** follows the C# `required` modifier or `[JsonRequired]` — the two markers System.Text.Json
+enforces when reading — and nothing else. Nullability is a separate question: a required member may still
+accept null, and an optional one may not.
 
 ### Enums have two shapes, and they disagree
 

@@ -13,6 +13,7 @@ public static class JsonMemberReader
   private const string JsonPropertyOrderName = "System.Text.Json.Serialization.JsonPropertyOrderAttribute";
   private const string JsonConverterName = "System.Text.Json.Serialization.JsonConverterAttribute";
   private const string RequiredMemberName = "System.Runtime.CompilerServices.RequiredMemberAttribute";
+  private const string JsonRequiredName = "System.Text.Json.Serialization.JsonRequiredAttribute";
 
   /// <summary>
   /// <c>JsonIgnoreCondition.Always</c>, the value <c>[JsonIgnore]</c> carries when written without one.
@@ -81,8 +82,16 @@ public static class JsonMemberReader
       declared,
       order,
       property.MetadataToken,
-      MetadataFacts.FindAttribute(property, RequiredMemberName) is not null,
+      IsRequired(property),
       NullableFlagsReader.Read(property),
       converter);
   }
+
+  /// <summary>
+  /// Whether System.Text.Json refuses to read the type without this property: either marker makes it
+  /// throw on a missing key, so either one puts the property in <c>required</c>.
+  /// </summary>
+  private static bool IsRequired(PropertyInfo property) =>
+    MetadataFacts.FindAttribute(property, RequiredMemberName) is not null
+    || MetadataFacts.FindAttribute(property, JsonRequiredName) is not null;
 }
