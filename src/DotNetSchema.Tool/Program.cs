@@ -18,7 +18,11 @@ try
     assemblies.Add(context.LoadFromAssemblyPath(path));
   }
 
-  var options = SchemaGenerationOptions.Default with { DefaultFileName = arguments.DefaultFileName };
+  var options = SchemaGenerationOptions.Default with
+  {
+    DefaultFileName = arguments.DefaultFileName,
+    EnumStyle = arguments.EnumStyle,
+  };
   var result = new JsonSchemaGenerator().Generate(assemblies, options);
 
   foreach (var diagnostic in result.Diagnostics)

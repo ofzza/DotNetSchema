@@ -34,6 +34,9 @@ public sealed record Book
   /// <summary>Publication date.</summary>
   public required DateOnly PublishedOn { get; init; }
 
+  /// <summary>How the library's copy is bound. Written as a string, not a number.</summary>
+  public required BookBinding Binding { get; init; }
+
   /// <summary>Whether the library holds a digital licence. Optional but never null: assumed not.</summary>
   public bool HasDigitalLicence { get; init; }
 

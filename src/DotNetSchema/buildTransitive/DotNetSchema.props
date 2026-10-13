@@ -40,6 +40,13 @@
     <DotNetSchemaFailOnEmpty Condition="'$(DotNetSchemaFailOnEmpty)' == ''">false</DotNetSchemaFailOnEmpty>
 
     <!--
+      The shape enum values take: OneOfConstTitle (standard JSON Schema, names as titles), EnumWithNames
+      (enum plus the x-enumNames vendor keyword some code generators expect) or Enum (values only). Spelled
+      out here rather than left to the tool's own default, so the argument it receives is always explicit.
+    -->
+    <DotNetSchemaEnumStyle Condition="'$(DotNetSchemaEnumStyle)' == ''">OneOfConstTitle</DotNetSchemaEnumStyle>
+
+    <!--
       Directory the documents are written to; a relative path is resolved against the project directory.
       Deliberately left empty here: it defaults to $(OutDir), which the SDK has not computed yet at this
       point in either delivery path.

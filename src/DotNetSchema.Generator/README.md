@@ -87,6 +87,7 @@ keyword names suggest. Three rows marked ⚠ are places where the obvious answer
 | ⚠ `DateTime` | `{"type":"string","format":"date-time"}` — true only when `Kind` is not `Unspecified`, which the type does not guarantee. Noted in a `$comment`. |
 | `DateTimeOffset` | `{"type":"string","format":"date-time"}` |
 | model | `{"$ref":"#/$defs/T"}`, always |
+| enum | `{"$ref":"#/$defs/E"}`; the definition's shape is set by `EnumStyle` — see [Enums](#enums-have-two-shapes-and-they-disagree) |
 | `IReadOnlyList<T>` and friends, `T[]` | `{"type":"array","items":…}` |
 | `byte[]`, `Memory<byte>` | `{"type":"string","contentEncoding":"base64"}` |
 | `IReadOnlyDictionary<K,V>` and friends | `{"type":"object","propertyNames":…,"additionalProperties":…}` |
@@ -125,9 +126,21 @@ not the string converter is in force. So in one document:
 as `"Essay"`. Same CLR type, no attribute anywhere hinting at it. The document makes it visible, which is
 most of the value in generating one.
 
-The numeric form carries its member names as `oneOf` of annotated constants, so code generation still
-gets them. `[JsonConverter(typeof(JsonStringEnumConverter))]` on the enum or the property switches the
-value form to strings. A naming policy set on `JsonSerializerOptions` is invisible to a metadata-only
+`[JsonConverter(typeof(JsonStringEnumConverter))]` on the enum or the property switches the value form
+to strings. Either way the value keeps its `type` (`integer` or `string`), and
+`SchemaGenerationOptions.EnumStyle` (`DotNetSchemaEnumStyle` in the build) picks how the member names
+travel with it:
+
+| Style | Shape | |
+| --- | --- | --- |
+| `OneOfConstTitle` (default) | `"oneOf": [{"const": 0, "title": "Student"}, …]` | Standard JSON Schema. |
+| `EnumWithNames` | `"enum": [0, …], "x-enumNames": ["Student", …]` | The shape NSwag popularised and several code generators look for. `x-enumNames` is a vendor keyword: Draft 2020-12 treats it as an annotation, but a strict validator (Ajv's default strict mode) rejects the schema unless it is registered. |
+| `Enum` | `"enum": [0, …]` | Terser; the names are lost. |
+
+A name is always the **C# member name**, never the value again. That matters for a string enum renamed
+by `[JsonStringEnumMemberName]` or a naming policy: it is written `"spiral-bound"`, and only the name says
+it is `SpiralBound`. The style does not reach a dictionary key, which is always a plain `enum` of the names
+it is written under. A naming policy set on `JsonSerializerOptions` is invisible to a metadata-only
 read, so an application that configures one must repeat it as `SchemaGenerationOptions.EnumNamingPolicy`.
 
 ## Determinism

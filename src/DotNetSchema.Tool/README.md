@@ -25,6 +25,7 @@ reaches a shell.
 | `--default-file-name=<name>` | no | Document a bare `[DotNetSchema]` targets. |
 | `--manifest=<path>` | no | File recording what was produced. |
 | `--fail-on-empty=true\|false` | no | Whether producing nothing is an error. |
+| `--enum-style=<style>` | no | `OneOfConstTitle` (default), `EnumWithNames` or `Enum`, ignoring case. Anything else, a number included, is `DNS0000`. |
 
 A path containing `;` is not supported: MSBuild splits item lists on it long before the tool sees it.
 

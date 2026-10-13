@@ -1,4 +1,6 @@
-﻿namespace DotNetSchema.Tool;
+﻿using DotNetSchema.Generator;
+
+namespace DotNetSchema.Tool;
 
 /// <summary>Everything the export run was told to do.</summary>
 /// <param name="Scan">Assemblies to search for marked types.</param>
@@ -7,13 +9,15 @@
 /// <param name="DefaultFileName">Document a marked type without a named file belongs to.</param>
 /// <param name="ManifestPath">File recording what was produced, so the build can track and prune it.</param>
 /// <param name="FailOnEmpty">Whether producing nothing is an error.</param>
+/// <param name="EnumStyle">The shape enum values take in the documents.</param>
 public sealed record ToolArguments(
   IReadOnlyList<string> Scan,
   IReadOnlyList<string> References,
   string OutputDirectory,
   string DefaultFileName,
   string ManifestPath,
-  bool FailOnEmpty)
+  bool FailOnEmpty,
+  EnumStyle EnumStyle)
 {
   /// <summary>
   /// Parses <c>--key=value</c> arguments, expanding any <c>@file</c> into one argument per line.
@@ -31,6 +35,7 @@ public sealed record ToolArguments(
     var defaultFileName = "schema.json";
     var manifestPath = string.Empty;
     var failOnEmpty = false;
+    var enumStyle = EnumStyle.OneOfConstTitle;
 
     foreach (var argument in Expand(arguments))
     {
@@ -58,13 +63,27 @@ public sealed record ToolArguments(
         case "--fail-on-empty":
           failOnEmpty = string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
           break;
+        case "--enum-style":
+          enumStyle = ParseEnumStyle(value);
+          break;
         default:
           throw new ArgumentException($"Unrecognised argument '{key}'.");
       }
     }
 
-    return new ToolArguments(scan, references, outputDirectory, defaultFileName, manifestPath, failOnEmpty);
+    return new ToolArguments(scan, references, outputDirectory, defaultFileName, manifestPath, failOnEmpty, enumStyle);
   }
+
+  /// <summary>Reads an <see cref="EnumStyle" /> by member name, ignoring case.</summary>
+  /// <remarks>
+  /// Matched against the declared names rather than through <c>Enum.TryParse</c>, which would also accept a
+  /// number — and a number would quietly select whichever style happens to sit at that position.
+  /// </remarks>
+  private static EnumStyle ParseEnumStyle(string value) =>
+    Enum.GetNames<EnumStyle>().FirstOrDefault(n => string.Equals(n, value, StringComparison.OrdinalIgnoreCase)) is { } name
+      ? Enum.Parse<EnumStyle>(name)
+      : throw new ArgumentException(
+        $"Unrecognised enum style '{value}'; expected one of {string.Join(", ", Enum.GetNames<EnumStyle>())}.");
 
   private static IEnumerable<string> Expand(IEnumerable<string> arguments)
   {

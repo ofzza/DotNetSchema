@@ -53,6 +53,7 @@ AssessmentRecord scalars = fixtures.GenerateAssessmentRecord(42);   // scalars o
 | Indirect recursion | `Class ↔ Book`, `Class ↔ Person`, `Class ↔ Room`, `Class ↔ Assessment` |
 | Required × nullable, all four combinations, for scalars, arrays, maps, enums and model references | see [Required and nullable](#required-and-nullable) |
 | `[JsonRequired]` in place of the `required` modifier | `Book.Isbn` |
+| A string-converted enum, with a member renamed by `[JsonStringEnumMemberName]` | `Book.Binding` (`BookBinding`) |
 | Every portable type nullable, as a value, as an array item and as a map value | `NullableScalarBattery`, `NullableScalarSeries`, `NullableScalarRegister` — see [Required and nullable](#required-and-nullable) |
 
 ### What counts as "portable"
@@ -104,6 +105,7 @@ enum RoomKind       { LectureHall, Classroom, Laboratory, SeminarRoom, Studio, W
                       Gymnasium, ReadingRoom, Auditorium }
 enum AssessmentKind { Quiz, MidtermExam, FinalExam, Essay, LabReport, Practical, OralDefence,
                       GroupProject }
+enum BookBinding    { Hardcover, Paperback, SpiralBound }       // written as strings; SpiralBound as "spiral-bound"
 
 
 // ── The estate ────────────────────────────────────────────────────────────────
@@ -232,6 +234,7 @@ record Book {
     PageCount          : ushort
     Price              : decimal
     PublishedOn        : DateOnly
+    Binding            : BookBinding                        // the one string-converted enum
     HasDigitalLicence? : bool
     Class?             : Class?                             // ↻ indirect: Book → Class → Book
     Authors            : Array<Person>?
@@ -614,7 +617,7 @@ JSON Schema documents into the output directory:
 
 | Marked type | Document | What it is there to exercise |
 | --- | --- | --- |
-| `School` | `school.json` | The whole graph — 19 records, 7 enums and `System.DayOfWeek`, nine levels deep, with every cycle closed by `$ref`. |
+| `School` | `school.json` | The whole graph — 19 records, 8 enums and `System.DayOfWeek`, nine levels deep, with every cycle closed by `$ref`. |
 | `Assessment`, `AssessmentRecord` | `assessment.json` | Two entry points in one document, sharing `Class`, `Person` and `Room` with `school.json`. |
 | `ScalarRegister` | `schema.json` | The default file name, and a type defined in two documents at once. |
 
@@ -668,7 +671,7 @@ services.AddSingleton<IFixturesService, FixturesService>();
 
 ```
 Schema/          the records — plain, immutable, no dependency on the generator
-  Enums/         the seven enums
+  Enums/         the eight enums
   Invalid/       shapes that are deliberately wrong, for the JSON Schema exporter's diagnostic tests
 Generation/
   FixtureSeed         path-derived seeds

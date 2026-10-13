@@ -74,6 +74,7 @@ Every one of these is an ordinary MSBuild property, set in the host `.csproj` (o
 | `DotNetSchemaScanProjectReferences` | `true` | Set `false` to export only this project's own marked types. |
 | `DotNetSchemaIncludeInPublish` | `true` | Whether the documents are also copied to `$(PublishDir)`. |
 | `DotNetSchemaFailOnEmpty` | `false` | Fail the build when nothing is marked. Worth turning on in CI. |
+| `DotNetSchemaEnumStyle` | `OneOfConstTitle` | How enum values carry their member names: `OneOfConstTitle` (a `oneOf` of titled constants, standard), `EnumWithNames` (`enum` plus the `x-enumNames` vendor keyword) or `Enum` (values only). |
 | `DotNetSchemaToolPath` | *(empty)* | Escape hatch: run a specific prebuilt export tool. |
 
 For example, to keep the documents in the source tree where a front end can pick them up:

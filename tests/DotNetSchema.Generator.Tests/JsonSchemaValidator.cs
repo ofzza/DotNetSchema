@@ -22,6 +22,9 @@ public static class JsonSchemaValidator
     "$ref", "$comment", "title", "type", "enum", "const", "oneOf", "anyOf", "properties", "required",
     "items", "propertyNames", "additionalProperties", "minimum", "maximum", "minLength", "maxLength",
     "pattern", "format", "contentEncoding",
+
+    // An annotation, never checked: it names the members of the enum beside it and constrains nothing.
+    "x-enumNames",
   ];
 
   /// <summary>Validates an instance against a document, returning one message per failure.</summary>

@@ -478,7 +478,11 @@ public sealed partial class FixturesService : IFixturesService
             nameof(Book.Chapters),
             budget,
             options,
-            (s, b) => GenerateChapter(s, b, options, 1))
+            (s, b) => GenerateChapter(s, b, options, 1)),
+
+      // Drawn last, after every other value taken from this record's random, so adding the property moved
+      // none of the values the record already had.
+      Binding = random.PickEnum<BookBinding>()
     };
   }
 

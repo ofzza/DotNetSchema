@@ -10,9 +10,9 @@ public sealed partial class JsonSchemaGeneratorTests
   /// project README for how.
   /// </summary>
   [Theory]
-  [InlineData("assessment.json", "d3aaa9af6244fab29b731be97df092f8a904f6efdbb1e3f2c14f2352b56d8005")]
+  [InlineData("assessment.json", "c28268e5dbc6ed4eca49a31427749513757e0ea0f803936eec06ee6d19f8c7fb")]
   [InlineData("schema.json", "f81e546f34fd24b8063db573618f11627642a86a022b372eb1da75ad1b58b4c0")]
-  [InlineData("school.json", "d3864e9c5e6e8def211a36f63915fe5b5d17e0ff962b3c91d0afc38d40929b6d")]
+  [InlineData("school.json", "dbdd0daafb333d4c048c23547e59e9031aefc506366d660fc391d9d35cc21b69")]
   public void EachDocument_ReproducesItsGoldenDigest(string fileName, string digest)
   {
     var document = new JsonSchemaGenerator()
@@ -130,6 +130,42 @@ public sealed partial class JsonSchemaGeneratorTests
     Assert.Equal(
       """[{"const":0,"title":"Student"},{"const":1,"title":"Professor"}]""",
       Compact(Trim(role, 2, "oneOf")));
+  }
+
+  [Fact]
+  public void AStringEnum_CarriesItsCSharpNamesAsTitles_EvenWhereItsValueIsRenamed()
+  {
+    // The title is the C# name, not the value again: only the title says "spiral-bound" is SpiralBound.
+    Assert.Equal(
+      """{"type":"string","oneOf":[{"const":"Hardcover","title":"Hardcover"},{"const":"Paperback","title":"Paperback"},{"const":"spiral-bound","title":"SpiralBound"}]}""",
+      Compact(Definition("BookBinding", typeof(School))));
+  }
+
+  [Fact]
+  public void UnderEnumWithNames_AnEnumListsItsCSharpNamesAlongsideItsValues()
+  {
+    var options = SchemaGenerationOptions.Default with { EnumStyle = EnumStyle.EnumWithNames };
+    var role = Definition("PersonRole", options, typeof(School));
+
+    Assert.Equal("integer", role["type"]!.GetValue<string>());
+    Assert.Equal("[0,1]", Compact(Trim(role, 2, "enum")));
+    Assert.Equal("""["Student","Professor"]""", Compact(Trim(role, 2, "x-enumNames")));
+    Assert.False(role.ContainsKey("oneOf"));
+
+    Assert.Equal(
+      """{"type":"string","enum":["Hardcover","Paperback","spiral-bound"],"x-enumNames":["Hardcover","Paperback","SpiralBound"]}""",
+      Compact(Definition("BookBinding", options, typeof(School))));
+  }
+
+  [Fact]
+  public void UnderEnum_AnEnumLosesItsNames()
+  {
+    var options = SchemaGenerationOptions.Default with { EnumStyle = EnumStyle.Enum };
+
+    Assert.Equal(
+      """{"type":"string","enum":["Hardcover","Paperback","spiral-bound"]}""",
+      Compact(Definition("BookBinding", options, typeof(School))));
+    Assert.Equal("[0,1]", Compact(Trim(Definition("PersonRole", options, typeof(School)), 2, "enum")));
   }
 
   /// <summary>Indented JSON, matching the raw string literals the goldens are written as.</summary>

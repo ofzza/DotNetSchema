@@ -119,32 +119,37 @@ public sealed class SchemaDocumentWriter(
     var members = EnumFacts.Members(type, options);
     var isString = asString ?? EnumFacts.IsStringConverted(type, null);
 
-    if (isString)
-    {
-      return new JsonObject
-      {
-        ["type"] = "string",
-        ["enum"] = new JsonArray([.. members.Select(m => (JsonNode)m.JsonName)]),
-      };
-    }
+    // The value is what System.Text.Json writes; the name is the C# member name, which for a renamed string
+    // member is the only place the declaration still shows.
+    JsonNode Value(EnumMember member) => isString ? (JsonNode)member.JsonName : Constant(member);
 
-    var definition = new JsonObject { ["type"] = "integer" };
+    var definition = new JsonObject { ["type"] = isString ? "string" : "integer" };
 
-    if (options.EmitComments)
+    if (!isString && options.EmitComments)
     {
       definition["$comment"] =
         $"{type.FullName} ({EnumFacts.UnderlyingType(type).FullName}). System.Text.Json writes the " +
         "numeric value here; as a dictionary key the same type is written as the member name instead.";
     }
 
-    if (options.NumericEnums == NumericEnumStyle.Enum)
+    switch (options.EnumStyle)
     {
-      definition["enum"] = new JsonArray([.. members.Select(Constant)]);
-      return definition;
+      case EnumStyle.Enum:
+        definition["enum"] = new JsonArray([.. members.Select(Value)]);
+        break;
+
+      case EnumStyle.EnumWithNames:
+        // Two parallel arrays, so both take the one member order EnumFacts.Members settled on.
+        definition["enum"] = new JsonArray([.. members.Select(Value)]);
+        definition["x-enumNames"] = new JsonArray([.. members.Select(m => (JsonNode)m.ClrName)]);
+        break;
+
+      default:
+        definition["oneOf"] = new JsonArray(
+          [.. members.Select(m => (JsonNode)new JsonObject { ["const"] = Value(m), ["title"] = m.ClrName })]);
+        break;
     }
 
-    definition["oneOf"] = new JsonArray(
-      [.. members.Select(m => (JsonNode)new JsonObject { ["const"] = Constant(m), ["title"] = m.JsonName })]);
     return definition;
   }
 

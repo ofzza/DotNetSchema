@@ -27,8 +27,10 @@ public sealed partial class JsonSchemaGeneratorTests
   private const string TestingMarker =
     "DotNetSchema.Fixtures.Schema.Invalid.ExportForTestingAttribute";
 
-  private static SchemaGenerationResult Generate(params Type[] roots) =>
-    new JsonSchemaGenerator().GenerateFor([.. roots.Select(t => new SchemaRoot(t, "test.json"))]);
+  private static SchemaGenerationResult Generate(params Type[] roots) => Generate(SchemaGenerationOptions.Default, roots);
+
+  private static SchemaGenerationResult Generate(SchemaGenerationOptions options, params Type[] roots) =>
+    new JsonSchemaGenerator().GenerateFor([.. roots.Select(t => new SchemaRoot(t, "test.json"))], options);
 
   /// <summary>Runs the attribute scan over the invalid cases, which carry the testing marker.</summary>
   private static SchemaGenerationResult GenerateInvalid() =>
@@ -37,16 +39,23 @@ public sealed partial class JsonSchemaGeneratorTests
       SchemaGenerationOptions.Default with { MarkerAttributeFullName = TestingMarker });
 
   /// <summary>The single document produced for the given roots, parsed.</summary>
-  private static JsonObject Document(params Type[] roots)
+  private static JsonObject Document(params Type[] roots) => Document(SchemaGenerationOptions.Default, roots);
+
+  /// <summary>The single document produced for the given roots under the given options, parsed.</summary>
+  private static JsonObject Document(SchemaGenerationOptions options, params Type[] roots)
   {
-    var result = Generate(roots);
+    var result = Generate(options, roots);
     Assert.Empty(result.Diagnostics);
     return (JsonObject)JsonNode.Parse(Assert.Single(result.Documents).Json)!;
   }
 
   /// <summary>One definition out of a document produced for the given roots.</summary>
   private static JsonObject Definition(string name, params Type[] roots) =>
-    (JsonObject)Document(roots)["$defs"]![name]!;
+    Definition(name, SchemaGenerationOptions.Default, roots);
+
+  /// <summary>One definition out of a document produced for the given roots under the given options.</summary>
+  private static JsonObject Definition(string name, SchemaGenerationOptions options, params Type[] roots) =>
+    (JsonObject)Document(options, roots)["$defs"]![name]!;
 
   /// <summary>One property's schema out of a definition.</summary>
   private static JsonObject Property(JsonObject definition, string name) =>

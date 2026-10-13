@@ -137,6 +137,7 @@
       <_DotNetSchemaArgument Include="--default-file-name=$(DotNetSchemaDefaultFileName)" />
       <_DotNetSchemaArgument Include="--manifest=$(_DotNetSchemaManifest)" />
       <_DotNetSchemaArgument Include="--fail-on-empty=$(DotNetSchemaFailOnEmpty)" />
+      <_DotNetSchemaArgument Include="--enum-style=$(DotNetSchemaEnumStyle)" />
       <_DotNetSchemaArgument Include="@(_DotNetSchemaScan->'--scan=%(FullPath)')" />
       <_DotNetSchemaArgument Include="@(_DotNetSchemaResolve->'--reference=%(FullPath)')" />
     </ItemGroup>
