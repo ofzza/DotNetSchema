@@ -1,4 +1,6 @@
-﻿using DotNetSchema.Fixtures.Schema.Enums;
+﻿using System.ComponentModel.DataAnnotations;
+using DotNetSchema.Fixtures.Schema.Decorators;
+using DotNetSchema.Fixtures.Schema.Enums;
 
 namespace DotNetSchema.Fixtures.Schema;
 
@@ -12,9 +14,17 @@ public sealed record Person
   public required Guid Id { get; init; }
 
   /// <summary>Given name.</summary>
+  [StringLength(32, MinimumLength = 2)]
+  [SampleDecorator(
+    false, sbyte.MinValue, byte.MinValue, short.MinValue, ushort.MinValue, int.MinValue, uint.MinValue,
+    long.MinValue, ulong.MinValue, float.NegativeInfinity, double.NaN, 'a', null)]
   public required string GivenName { get; init; }
 
   /// <summary>Family name.</summary>
+  [MaxLength(40)]
+  [SampleDecorator(
+    true, sbyte.MaxValue, byte.MaxValue, short.MaxValue, ushort.MaxValue, int.MaxValue, uint.MaxValue,
+    long.MaxValue, ulong.MaxValue, float.MaxValue, double.PositiveInfinity, '"', "quote \" and \u2713")]
   public required string FamilyName { get; init; }
 
   /// <summary>Capacity in which the person is attached to the school.</summary>
@@ -24,6 +34,7 @@ public sealed record Person
   public required DateOnly BornOn { get; init; }
 
   /// <summary>School e-mail address. Optional and nullable: not everyone has been issued one.</summary>
+  [EmailAddress]
   public string? Email { get; init; }
 
   /// <summary>Whether the person's record is currently active.</summary>
@@ -33,9 +44,11 @@ public sealed record Person
   /// Grade point average across all completed classes. Required but nullable: <c>null</c> before the first
   /// class is completed.
   /// </summary>
+  [Range(1d, 5d)]
   public required double? GradePointAverage { get; init; }
 
   /// <summary>Class offerings attended or taught. Indirectly recursive: Person -> Class -> Person.</summary>
+  [Length(0, 64)]
   public required IReadOnlyList<Class> Classes { get; init; }
 
   /// <summary>

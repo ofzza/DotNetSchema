@@ -12,7 +12,7 @@ public sealed partial class JsonSchemaGeneratorTests
 
     Assert.Equal(
       [
-        "Address", "Assessment", "AssessmentKind", "AssessmentRecord", "Book", "BookName", "Building",
+        "Address", "Assessment", "AssessmentKind", "AssessmentRecord", "Book", "BookBinding", "BookName", "Building",
         "Campus", "Chapter", "Class", "ClassName", "ClassSession", "DayOfWeek", "Department",
         "DepartmentName", "Exercise", "Library", "NullableScalarBattery", "NullableScalarRegister",
         "NullableScalarSeries", "Person", "PersonRole", "Room", "RoomKind", "ScalarBattery", "ScalarRegister",

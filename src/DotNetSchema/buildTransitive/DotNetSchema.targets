@@ -137,6 +137,18 @@
       <_DotNetSchemaArgument Include="--default-file-name=$(DotNetSchemaDefaultFileName)" />
       <_DotNetSchemaArgument Include="--manifest=$(_DotNetSchemaManifest)" />
       <_DotNetSchemaArgument Include="--fail-on-empty=$(DotNetSchemaFailOnEmpty)" />
+      <_DotNetSchemaArgument Include="--enum-style=$(DotNetSchemaEnumStyle)" />
+
+      <!-- Each decorator list travels whole, as one line the tool splits on ';'. Escaped first, because an
+           item Include would otherwise split the list on ';' and treat a '*' pattern as a file glob - which,
+           matching no file, silently drops the item. Passed only when set: MSBuild cannot tell an empty
+           property from an unset one, and an empty one must not replace the default list with nothing. -->
+      <_DotNetSchemaArgument Include="--decorators=$([MSBuild]::Escape('$(DotNetSchemaDecorators)'))"
+                             Condition="'$(DotNetSchemaDecorators)' != ''" />
+      <_DotNetSchemaArgument Include="--decorators-allow=$([MSBuild]::Escape('$(DotNetSchemaDecoratorsAllow)'))"
+                             Condition="'$(DotNetSchemaDecoratorsAllow)' != ''" />
+      <_DotNetSchemaArgument Include="--decorators-deny=$([MSBuild]::Escape('$(DotNetSchemaDecoratorsDeny)'))"
+                             Condition="'$(DotNetSchemaDecoratorsDeny)' != ''" />
       <_DotNetSchemaArgument Include="@(_DotNetSchemaScan->'--scan=%(FullPath)')" />
       <_DotNetSchemaArgument Include="@(_DotNetSchemaResolve->'--reference=%(FullPath)')" />
     </ItemGroup>

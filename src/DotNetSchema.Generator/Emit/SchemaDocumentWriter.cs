@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Nodes;
+using DotNetSchema.Generator.Diagnostics;
 using DotNetSchema.Generator.Model;
 using DotNetSchema.Generator.Reflection;
 
@@ -17,6 +18,8 @@ public sealed class SchemaDocumentWriter(
   private const string Dialect = "https://json-schema.org/draft/2020-12/schema";
 
   private readonly TypeClassifier _classifier = new(options, diagnostics);
+  private readonly DecoratorReader _decorators = new(options);
+  private readonly DecoratorKeywords _keywords = new(diagnostics);
 
   /// <summary>Writes one document.</summary>
   /// <param name="fileName">Its file name, which also supplies the <c>$id</c> and <c>title</c>.</param>
@@ -94,7 +97,14 @@ public sealed class SchemaDocumentWriter(
         continue;
       }
 
-      properties[member.JsonName] = Schema(reference);
+      var owner = type.FullName ?? type.Name;
+      var decorators = Decorators(() => _decorators.Read(member.Property), owner, member.Property.Name);
+      var body = Body(reference);
+      _keywords.Constrain(body, reference, decorators, owner, member.Property.Name);
+      var schema = Nullable(body, reference.IsNullable);
+      DecoratorKeywords.Annotate(schema, reference, decorators);
+
+      properties[member.JsonName] = schema;
 
       // Driven by the C# required modifier or [JsonRequired] alone — the two markers System.Text.Json
       // enforces on read. Nullability is a separate question: a required member may still accept null, and
@@ -111,6 +121,7 @@ public sealed class SchemaDocumentWriter(
       definition["required"] = required;
     }
 
+    DecoratorKeywords.Annotate(definition, Decorators(() => _decorators.Read(type), type.FullName ?? type.Name, null));
     return definition;
   }
 
@@ -119,33 +130,64 @@ public sealed class SchemaDocumentWriter(
     var members = EnumFacts.Members(type, options);
     var isString = asString ?? EnumFacts.IsStringConverted(type, null);
 
-    if (isString)
-    {
-      return new JsonObject
-      {
-        ["type"] = "string",
-        ["enum"] = new JsonArray([.. members.Select(m => (JsonNode)m.JsonName)]),
-      };
-    }
+    // The value is what System.Text.Json writes; the name is the C# member name, which for a renamed string
+    // member is the only place the declaration still shows.
+    JsonNode Value(EnumMember member) => isString ? (JsonNode)member.JsonName : Constant(member);
 
-    var definition = new JsonObject { ["type"] = "integer" };
+    var definition = new JsonObject { ["type"] = isString ? "string" : "integer" };
 
-    if (options.EmitComments)
+    if (!isString && options.EmitComments)
     {
       definition["$comment"] =
         $"{type.FullName} ({EnumFacts.UnderlyingType(type).FullName}). System.Text.Json writes the " +
         "numeric value here; as a dictionary key the same type is written as the member name instead.";
     }
 
-    if (options.NumericEnums == NumericEnumStyle.Enum)
+    switch (options.EnumStyle)
     {
-      definition["enum"] = new JsonArray([.. members.Select(Constant)]);
-      return definition;
+      case EnumStyle.Enum:
+        definition["enum"] = new JsonArray([.. members.Select(Value)]);
+        break;
+
+      case EnumStyle.EnumWithNames:
+        // Two parallel arrays, so both take the one member order EnumFacts.Members settled on.
+        definition["enum"] = new JsonArray([.. members.Select(Value)]);
+        definition["x-enumNames"] = new JsonArray([.. members.Select(m => (JsonNode)m.ClrName)]);
+        break;
+
+      default:
+        definition["oneOf"] = new JsonArray(
+          [.. members.Select(m => (JsonNode)new JsonObject { ["const"] = Value(m), ["title"] = m.ClrName })]);
+        break;
     }
 
-    definition["oneOf"] = new JsonArray(
-      [.. members.Select(m => (JsonNode)new JsonObject { ["const"] = Constant(m), ["title"] = m.JsonName })]);
+    DecoratorKeywords.Annotate(definition, Decorators(() => _decorators.Read(type), type.FullName ?? type.Name, null));
     return definition;
+  }
+
+  /// <summary>
+  /// Reads decorators, turning a failure to decode them into a warning. An attribute argument naming a type
+  /// from an assembly the load context cannot resolve throws only when it is decoded — after the type
+  /// itself has been read successfully — and a missing decorator is not worth withholding the document for.
+  /// </summary>
+  private IReadOnlyList<Decorator> Decorators(Func<IReadOnlyList<Decorator>> read, string owner, string? member)
+  {
+    try
+    {
+      return read();
+    }
+    catch (Exception exception) when (exception is FileNotFoundException or FileLoadException or TypeLoadException or BadImageFormatException)
+    {
+      var subject = member is null ? $"Type '{owner}'" : $"Property '{owner}.{member}'";
+      diagnostics.Add(new SchemaDiagnostic(
+        SchemaDiagnosticSeverity.Warning,
+        SchemaDiagnosticCodes.DecoratorUnreadable,
+        $"{subject} carries attributes that could not be read ({exception.Message}). Its decorators are " +
+        "left out.",
+        owner,
+        member));
+      return [];
+    }
   }
 
   private static JsonNode Constant(EnumMember member) => member.Value switch

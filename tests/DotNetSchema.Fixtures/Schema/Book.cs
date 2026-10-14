@@ -1,4 +1,7 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
+using DotNetSchema.Fixtures.Schema.Decorators;
 using DotNetSchema.Fixtures.Schema.Enums;
 
 namespace DotNetSchema.Fixtures.Schema;
@@ -13,6 +16,7 @@ public sealed record Book
   public required Guid Id { get; init; }
 
   /// <summary>Which title this is.</summary>
+  [SampleDecorator(typeof(SampleDecoratorAttribute.Nested), SampleShade.Red | SampleShade.Blue, "boxed")]
   public required BookName Name { get; init; }
 
   /// <summary>
@@ -20,12 +24,16 @@ public sealed record Book
   /// Required through <c>[JsonRequired]</c> rather than the C# modifier, so the fixtures cover both markers.
   /// </summary>
   [JsonRequired]
+  [Display(Name = "ISBN-13", Description = "ISBN-13, formatted with separators.")]
+  [SampleDecorator(typeof(IReadOnlyDictionary<string, Book>), SampleShade.Green, 42)]
   public string? Isbn { get; init; }
 
   /// <summary>Edition number.</summary>
+  [Range(1, 99)]
   public required byte Edition { get; init; }
 
   /// <summary>Number of pages.</summary>
+  [Range(typeof(ushort), "1", "5000")]
   public required ushort PageCount { get; init; }
 
   /// <summary>List price.</summary>
@@ -34,7 +42,11 @@ public sealed record Book
   /// <summary>Publication date.</summary>
   public required DateOnly PublishedOn { get; init; }
 
+  /// <summary>How the library's copy is bound. Written as a string, not a number.</summary>
+  public required BookBinding Binding { get; init; }
+
   /// <summary>Whether the library holds a digital licence. Optional but never null: assumed not.</summary>
+  [DefaultValue(false)]
   public bool HasDigitalLicence { get; init; }
 
   /// <summary>The offering that prescribes the title. Indirectly recursive: Book -> Class -> Book.</summary>
@@ -44,5 +56,6 @@ public sealed record Book
   public required IReadOnlyList<Person>? Authors { get; init; }
 
   /// <summary>Table of contents.</summary>
+  [MaxLength(64)]
   public required IReadOnlyList<Chapter> Chapters { get; init; }
 }

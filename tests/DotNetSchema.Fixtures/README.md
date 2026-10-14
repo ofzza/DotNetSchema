@@ -27,6 +27,7 @@ AssessmentRecord scalars = fixtures.GenerateAssessmentRecord(42);   // scalars o
   - [Graph](#graph)
   - [Recursion](#recursion)
   - [Required and nullable](#required-and-nullable)
+  - [Decorators](#decorators)
 - [Generation](#generation)
   - [Determinism](#determinism)
   - [Path-derived seeds](#path-derived-seeds)
@@ -53,7 +54,11 @@ AssessmentRecord scalars = fixtures.GenerateAssessmentRecord(42);   // scalars o
 | Indirect recursion | `Class ↔ Book`, `Class ↔ Person`, `Class ↔ Room`, `Class ↔ Assessment` |
 | Required × nullable, all four combinations, for scalars, arrays, maps, enums and model references | see [Required and nullable](#required-and-nullable) |
 | `[JsonRequired]` in place of the `required` modifier | `Book.Isbn` |
+| A string-converted enum, with a member renamed by `[JsonStringEnumMemberName]` | `Book.Binding` (`BookBinding`) |
 | Every portable type nullable, as a value, as an array item and as a map value | `NullableScalarBattery`, `NullableScalarSeries`, `NullableScalarRegister` — see [Required and nullable](#required-and-nullable) |
+| The well-known validation and description attributes, on types, enums and properties | across the graph — see [Decorators](#decorators) |
+| Every kind of attribute argument | the `Schema/Decorators/` sampler attributes, on the graph — see [Decorators](#decorators) |
+| An attribute on a positional record's constructor parameter; `[JsonRequired]`; DataAnnotations `[Required]` | `Bookmark`, outside the graph — see [Decorators](#decorators) |
 
 ### What counts as "portable"
 
@@ -104,6 +109,7 @@ enum RoomKind       { LectureHall, Classroom, Laboratory, SeminarRoom, Studio, W
                       Gymnasium, ReadingRoom, Auditorium }
 enum AssessmentKind { Quiz, MidtermExam, FinalExam, Essay, LabReport, Practical, OralDefence,
                       GroupProject }
+enum BookBinding    { Hardcover, Paperback, SpiralBound }       // written as strings; SpiralBound as "spiral-bound"
 
 
 // ── The estate ────────────────────────────────────────────────────────────────
@@ -232,6 +238,7 @@ record Book {
     PageCount          : ushort
     Price              : decimal
     PublishedOn        : DateOnly
+    Binding            : BookBinding                        // the one string-converted enum
     HasDigitalLicence? : bool
     Class?             : Class?                             // ↻ indirect: Book → Class → Book
     Authors            : Array<Person>?
@@ -457,8 +464,9 @@ since neither intermediate looks like it belongs to a person.
 
 Whether a property is `required` and whether it accepts `null` are separate questions — the schema's
 `required` follows the C# `required` modifier or `[JsonRequired]` alone — so the fixtures answer them in all
-four combinations, for every shape a property can take. `Book.Isbn` is the one property marked with
-`[JsonRequired]` instead of the modifier. A consumer that turns the schema into types (for example
+four combinations, for every shape a property can take. `Book.Isbn` is the one property of the graph marked
+with `[JsonRequired]` instead of the modifier (`Bookmark` has another, under [Decorators](#decorators)). A
+consumer that turns the schema into types (for example
 [`tsschema`](https://www.npmjs.com/package/@ofzza/tsschema)) can therefore tell `x?: T` from
 `x: T | null`.
 
@@ -494,6 +502,62 @@ The generator always sets the optional, non-null properties (System.Text.Json wr
 fills each nullable property, item and map value at `OptionalFillRate`, deciding from a seed derived from its
 path, so the record's other values do not move; a twin is a plain bundle with values knocked out, so it
 agrees with the plain bundle drawn from the same seed wherever it is not `null`.
+
+### Decorators
+
+The graph carries attributes for the generator's `x-decorators` export, of two kinds. None of them changes
+a generated value: every constraint below already holds for whatever `FixturesService` produces.
+
+**Well-known attributes**, in the generator's default decorator list, so they appear in the documents in
+`bin/` and in the golden digests — each as an `x-decorators` entry and as the standard keywords it maps to:
+
+| Attribute | Where |
+| --- | --- |
+| `[Description]` on a type | `School`, and the enum `PersonRole` |
+| `[DisplayName]` on a type | `Campus` |
+| `[StringLength(32, MinimumLength = 2)]` | `Person.GivenName` |
+| `[MaxLength]` on a string / on an array | `Person.FamilyName` / `Book.Chapters` |
+| `[Length(0, 64)]` on an array | `Person.Classes` |
+| `[EmailAddress]` on a nullable string | `Person.Email` |
+| `[Range]` — `double`, nullable | `Person.GradePointAverage` |
+| `[Range]` — `double`, plain and with `MinimumIsExclusive` | `Address.Latitude`, `Address.Longitude` |
+| `[Range]` — `int`, narrower than the type's own bounds | `Book.Edition` |
+| `[Range(typeof(ushort), "1", "5000")]` | `Book.PageCount` |
+| `[RegularExpression]` | `Address.CountryCode` |
+| `[Display(Name, Description)]` | `Book.Isbn` |
+| `[DefaultValue]` | `Book.HasDigitalLicence` |
+
+**Sampler attributes** — `SampleDecoratorAttribute` and the repeatable `SampleTagAttribute`, in
+`Schema/Decorators/` — mean nothing; between them they take every kind of argument an attribute can carry.
+That namespace is deliberately outside the default list, so they never reach the documents in `bin/` or the
+goldens; a test that wants them allows `DotNetSchema.Fixtures.Schema.Decorators.*`.
+
+| Arguments | Where |
+| --- | --- |
+| none | `School` |
+| every primitive at its minimum, `float.NegativeInfinity`, `double.NaN`, a `null` string | `Person.GivenName` |
+| every primitive at its maximum, `float.MaxValue`, `double.PositiveInfinity`, a quote and a non-ASCII character | `Person.FamilyName` |
+| a constructed generic type, a single enum member, a boxed `int` | `Book.Isbn` |
+| a nested type, a `[Flags]` combination, a boxed `string` | `Book.Name` (a `$ref`) |
+| an open generic type, an undeclared enum value, a boxed `Type` | `Address.Street` |
+| an array type, the zero enum member, a boxed array | `Address.PostalCode` |
+| `int[]`, `string?[]`, `Type[]`, and a mixed `object?[]` | `Address.City` |
+| the same four, empty | `Address.CountryCode` |
+| named property and field arguments only | `Campus` |
+| repeated applications, with and without a `params` array | `School` (`SampleTag` ×3) |
+| on an enum type | `PersonRole` (`SampleTag`) |
+
+**`Bookmark`** (`Schema/Decorators/`) is a positional record outside the graph — `FixturesService` never
+builds one — for the cases the graph cannot carry without changing what it means:
+
+| Property | Case |
+| --- | --- |
+| `Href` | `[property: Url]` → `format: uri` |
+| `Rank` | `[Range]` written without a target, so on the constructor parameter — still read |
+| `Label` | DataAnnotations `[Required]` on an optional, nullable property — listed, but neither required nor narrowed |
+| `Note` | `[property: Obsolete]` and `[property: Description]` |
+| `Tags` | `SampleTag` on the parameter, on the property, and identically on both (listed once) |
+| `Revision` | `[JsonRequired]` without the C# `required` modifier — required in the schema |
 
 ---
 
@@ -614,17 +678,18 @@ JSON Schema documents into the output directory:
 
 | Marked type | Document | What it is there to exercise |
 | --- | --- | --- |
-| `School` | `school.json` | The whole graph — 19 records, 7 enums and `System.DayOfWeek`, nine levels deep, with every cycle closed by `$ref`. |
+| `School` | `school.json` | The whole graph — 19 records, 8 enums and `System.DayOfWeek`, nine levels deep, with every cycle closed by `$ref`. |
 | `Assessment`, `AssessmentRecord` | `assessment.json` | Two entry points in one document, sharing `Class`, `Person` and `Room` with `school.json`. |
 | `ScalarRegister` | `schema.json` | The default file name, and a type defined in two documents at once. |
 
 The attributes change no generated value: a fixture graph is exactly what it was before they were added.
+That holds for the [decorators](#decorators) too.
 
 `Schema/Invalid/` is not part of the school graph and `FixturesService` never constructs any of it. It
 holds the shapes an exporter has to have an answer for — a property typed `object`, a generic model, a
 record used as a dictionary key, two types with the same short name, two properties with the same JSON
-name — so that the diagnostics can be tested against real declarations rather than against types invented
-inside a test. They carry `[ExportForTesting]` rather than `[DotNetSchema]`, because marking them
+name, a `[Range]` on a string — so that the diagnostics can be tested against real declarations rather
+than against types invented inside a test. They carry `[ExportForTesting]` rather than `[DotNetSchema]`, because marking them
 properly would export them, and exporting them would fail this project's own build.
 
 ---
@@ -668,7 +733,8 @@ services.AddSingleton<IFixturesService, FixturesService>();
 
 ```
 Schema/          the records — plain, immutable, no dependency on the generator
-  Enums/         the seven enums
+  Enums/         the eight enums
+  Decorators/    the sampler attributes, their [Flags] enum, and Bookmark — see Decorators
   Invalid/       shapes that are deliberately wrong, for the JSON Schema exporter's diagnostic tests
 Generation/
   FixtureSeed         path-derived seeds

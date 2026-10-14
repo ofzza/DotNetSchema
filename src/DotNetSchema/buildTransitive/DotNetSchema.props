@@ -40,6 +40,25 @@
     <DotNetSchemaFailOnEmpty Condition="'$(DotNetSchemaFailOnEmpty)' == ''">false</DotNetSchemaFailOnEmpty>
 
     <!--
+      The shape enum values take: OneOfConstTitle (standard JSON Schema, names as titles), EnumWithNames
+      (enum plus the x-enumNames vendor keyword some code generators expect) or Enum (values only). Spelled
+      out here rather than left to the tool's own default, so the argument it receives is always explicit.
+    -->
+    <DotNetSchemaEnumStyle Condition="'$(DotNetSchemaEnumStyle)' == ''">OneOfConstTitle</DotNetSchemaEnumStyle>
+
+    <!--
+      Which attributes are exposed under x-decorators, and translated into standard keywords where one
+      fits. Each is a ';'-separated list of attribute full names, namespace wildcards (Ns.*) or '*'.
+      DotNetSchemaDecorators replaces the generator's default list; DotNetSchemaDecoratorsAllow adds to it and
+      DotNetSchemaDecoratorsDeny removes from it, deny winning. Deliberately left empty here: the default list
+      lives in the generator, and an empty property is passed to the tool as no argument at all - so
+      "nothing" is spelt DotNetSchemaDecoratorsDeny=*, never an empty DotNetSchemaDecorators.
+    -->
+    <DotNetSchemaDecorators Condition="'$(DotNetSchemaDecorators)' == ''"></DotNetSchemaDecorators>
+    <DotNetSchemaDecoratorsAllow Condition="'$(DotNetSchemaDecoratorsAllow)' == ''"></DotNetSchemaDecoratorsAllow>
+    <DotNetSchemaDecoratorsDeny Condition="'$(DotNetSchemaDecoratorsDeny)' == ''"></DotNetSchemaDecoratorsDeny>
+
+    <!--
       Directory the documents are written to; a relative path is resolved against the project directory.
       Deliberately left empty here: it defaults to $(OutDir), which the SDK has not computed yet at this
       point in either delivery path.

@@ -53,12 +53,14 @@ DotNetSchema.Generator/
     JsonMemberReader.cs          a property as System.Text.Json sees it
     JsonMember.cs
     EnumFacts.cs                 members, ordering, string-converter detection
+    DecoratorReader.cs           selected attributes, rendered for x-decorators
   Model/                         C# types to schema shapes
     ScalarTable.cs               the mapping table, in one place
     TypeClassifier.cs            scalar / enum / model / array / map / binary / unmapped
     ClosureWalker.cs             what a document has to define
     DefinitionNameResolver.cs    $defs names, and collisions
     SchemaTypeRef.cs
+    DecoratorKeywords.cs         well-known attributes to standard keywords
   Emit/
     SchemaDocumentWriter.cs      the document, key by key
     JsonWriterDefaults.cs        the writer settings that make output byte-stable
@@ -87,6 +89,7 @@ keyword names suggest. Three rows marked ⚠ are places where the obvious answer
 | ⚠ `DateTime` | `{"type":"string","format":"date-time"}` — true only when `Kind` is not `Unspecified`, which the type does not guarantee. Noted in a `$comment`. |
 | `DateTimeOffset` | `{"type":"string","format":"date-time"}` |
 | model | `{"$ref":"#/$defs/T"}`, always |
+| enum | `{"$ref":"#/$defs/E"}`; the definition's shape is set by `EnumStyle` — see [Enums](#enums-have-two-shapes-and-they-disagree) |
 | `IReadOnlyList<T>` and friends, `T[]` | `{"type":"array","items":…}` |
 | `byte[]`, `Memory<byte>` | `{"type":"string","contentEncoding":"base64"}` |
 | `IReadOnlyDictionary<K,V>` and friends | `{"type":"object","propertyNames":…,"additionalProperties":…}` |
@@ -103,9 +106,11 @@ its siblings, so `{"$ref":…,"type":"null"}` demands both at once and nothing s
 scalar instead takes a second entry in its `type` array, which is safe because `format`, `pattern` and
 the numeric bounds are all type-conditional.
 
-**`required`** follows the C# `required` modifier or `[JsonRequired]` — the two markers System.Text.Json
-enforces when reading — and nothing else. Nullability is a separate question: a required member may still
-accept null, and an optional one may not.
+**`required`** follows the C# `required` modifier and `[JsonRequired]` — the two things System.Text.Json
+itself refuses a payload for lacking — and nothing else. DataAnnotations `[Required]` is not one of them:
+it is a non-null, non-empty check run by validation after deserialising, so it appears only under
+[`x-decorators`](#decorators). Nullability is a separate question: a required member may still accept
+null, and an optional one may not.
 
 ### Enums have two shapes, and they disagree
 
@@ -125,10 +130,93 @@ not the string converter is in force. So in one document:
 as `"Essay"`. Same CLR type, no attribute anywhere hinting at it. The document makes it visible, which is
 most of the value in generating one.
 
-The numeric form carries its member names as `oneOf` of annotated constants, so code generation still
-gets them. `[JsonConverter(typeof(JsonStringEnumConverter))]` on the enum or the property switches the
-value form to strings. A naming policy set on `JsonSerializerOptions` is invisible to a metadata-only
+`[JsonConverter(typeof(JsonStringEnumConverter))]` on the enum or the property switches the value form
+to strings. Either way the value keeps its `type` (`integer` or `string`), and
+`SchemaGenerationOptions.EnumStyle` (`DotNetSchemaEnumStyle` in the build) picks how the member names
+travel with it:
+
+| Style | Shape | |
+| --- | --- | --- |
+| `OneOfConstTitle` (default) | `"oneOf": [{"const": 0, "title": "Student"}, …]` | Standard JSON Schema. |
+| `EnumWithNames` | `"enum": [0, …], "x-enumNames": ["Student", …]` | The shape NSwag popularised and several code generators look for. `x-enumNames` is a vendor keyword: Draft 2020-12 treats it as an annotation, but a strict validator (Ajv's default strict mode) rejects the schema unless it is registered. |
+| `Enum` | `"enum": [0, …]` | Terser; the names are lost. |
+
+A name is always the **C# member name**, never the value again. That matters for a string enum renamed
+by `[JsonStringEnumMemberName]` or a naming policy: it is written `"spiral-bound"`, and only the name says
+it is `SpiralBound`. The style does not reach a dictionary key, which is always a plain `enum` of the names
+it is written under. A naming policy set on `JsonSerializerOptions` is invisible to a metadata-only
 read, so an application that configures one must repeat it as `SchemaGenerationOptions.EnumNamingPolicy`.
+
+## Decorators
+
+Attributes on a model, an enum or a property are exposed under the vendor keyword **`x-decorators`** —
+named for the general idea rather than for .NET, so that schemas from other languages' generators can use
+the same keyword. Each selected attribute application becomes one entry:
+
+```json
+"edition": {
+  "type": "integer", "minimum": 1, "maximum": 99,
+  "x-decorators": [
+    { "name": "System.ComponentModel.DataAnnotations.RangeAttribute",
+      "arguments": { "minimum": 1, "maximum": 99 } }
+  ]
+}
+```
+
+- `arguments` are the constructor arguments, keyed by parameter name; `properties` are the named
+  arguments, ordered by name. Either is left out when empty. Only what the source wrote is visible: the
+  attribute is read through `CustomAttributeData`, never instantiated.
+- Values: strings, booleans and numbers as themselves; a `char` as a one-character string; a `Type` by a
+  name free of assembly versions (`System.Collections.Generic.List<System.Int32>`, `List<T>` when open,
+  `Outer+Nested`); an enum by member name, or as its number for a flags combination or an undeclared
+  value; arrays as arrays; `NaN` and `±Infinity` as the strings `"NaN"`, `"Infinity"`, `"-Infinity"`.
+- Entries are sorted by name, then by their rendered text — metadata does not promise an order.
+- On a model or enum the list sits on its `$defs` entry; on a property, on the outermost schema — beside a
+  `$ref`, beside the `anyOf` of a nullable reference, on the array rather than its `items`.
+- On a positional record an attribute written without a `property:` target lands on the
+  primary-constructor parameter. It is read from there too (a positional record is recognised by its
+  compiler-generated `Deconstruct`); one applied identically to both is listed once.
+
+**Selection.** `(Decorators ?? DefaultDecorators) ∪ DecoratorsAllow − DecoratorsDeny`, deny winning. Each
+entry is an attribute's full name, a namespace wildcard `Ns.*` — types directly in `Ns`, so
+`System.ComponentModel.DataAnnotations.*` does not reach Entity Framework's `.Schema` attributes — or `*`.
+The defaults are `System.ComponentModel.DataAnnotations.*`, `DescriptionAttribute`,
+`DefaultValueAttribute` and `DisplayNameAttribute` from `System.ComponentModel`, and
+`System.ObsoleteAttribute`; they are part of the output contract. Whatever the selection says,
+`System.Runtime.CompilerServices.*`, `System.Text.Json.Serialization.*` (already reflected in the schema),
+`DotNetSchema.*` and the marker attribute are never exposed. `DecoratorsDeny = ["*"]` switches the
+feature off.
+
+**Standard keywords.** A selected well-known attribute is also translated, and only a selected one — denying
+`[Range]` removes its bounds along with its entry:
+
+| Attribute | Keywords | Applies to |
+| --- | --- | --- |
+| `[Description]` | `description` | model, enum, property |
+| `[DisplayName]`, `[Display(Name, Description)]` | `title`, `description` | model, enum, property |
+| `[Obsolete]` | `deprecated: true` | model, enum, property |
+| `[DefaultValue(value)]` | `default` | a scalar property; not the `(Type, string)` overload, nor an enum value |
+| `[Range]` (`int`, `double`, or `(Type, string, string)` for a numeric type) | `minimum` / `maximum`, or `exclusiveMinimum` / `exclusiveMaximum` under `MinimumIsExclusive` / `MaximumIsExclusive` | a numeric scalar |
+| `[MinLength]`, `[MaxLength]`, `[Length]` | `minLength` / `maxLength`; `minItems` / `maxItems` on an array | a string or an array, not `byte[]` (its base64 length differs) |
+| `[StringLength(max, MinimumLength)]` | `maxLength` / `minLength` | a string |
+| `[RegularExpression]` | `pattern`, anchored as `^(?:…)$` — .NET matches the whole string, JSON Schema does not | a string |
+| `[EmailAddress]`, `[Url]` | `format: email`, `format: uri` | a string |
+| `[Required]` | nothing — see `required` above | |
+
+A bound never loosens the type's own: `[Range(1, 99)]` on a `byte` gives `minimum: 1, maximum: 99`, and
+`[Range(-1000, 1000)]` on it keeps `0` and `255`. A `pattern` or `format` that would clash with the type's
+own (a `Guid`'s `uuid`), or any keyword on a schema it cannot describe (`[Range]` on a string), contributes
+nothing and raises `DNS0015`; the entry stays in `x-decorators`. Attributes that cannot be decoded at all —
+an argument naming a type from an assembly the load cannot resolve — raise `DNS0014`, and that member's
+decorators are left out.
+
+These keywords describe validation the model *declares*. System.Text.Json enforces none of it — it writes
+a `[Range(1, 10)]` property holding `42` without complaint — so they are the one place the schema says more
+than "what System.Text.Json writes". Deny the attribute if a schema consumer must accept everything the
+serialiser can produce.
+
+`x-decorators` is a vendor keyword: Draft 2020-12 treats it as an annotation, but a strict validator (Ajv's
+default strict mode) rejects the schema unless it is registered.
 
 ## Determinism
 
@@ -139,6 +227,8 @@ Output is byte-stable, because the goldens depend on it and so will the TypeScri
   ordering key provably identical on the runtime and metadata-only paths, since reflection promises
   nothing about the order `GetProperties` returns.
 - Enum members by ascending value, then `MetadataToken`, matching `Enum.GetNames`.
+- `x-decorators` entries by name, then rendered text; mapped keywords in one fixed order; a `Type` argument
+  by `MetadataFacts.TypeName`, never `FullName`, which embeds a different core assembly on each path.
 - `JsonWriterOptions.NewLine` pinned to `"\n"`. It defaults to `Environment.NewLine`, so leaving it unset
   would emit CRLF on Windows and put a golden out of reach.
 - `JavaScriptEncoder.UnsafeRelaxedJsonEscaping`, so the `TimeSpan` pattern's `\d+` stays readable rather

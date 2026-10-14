@@ -49,11 +49,49 @@ public sealed record SchemaGenerationOptions
   /// <summary>Which integer bounds are worth stating.</summary>
   public IntegerBoundsMode IntegerBounds { get; init; } = IntegerBoundsMode.ExactlyRepresentable;
 
-  /// <summary>How an enum serialised as a number carries its member names.</summary>
-  public NumericEnumStyle NumericEnums { get; init; } = NumericEnumStyle.OneOfConstTitle;
+  /// <summary>
+  /// The shape an enum value takes, and how it carries its member names — whether it is written as a number
+  /// or, under a string converter, as a string. A dictionary key is unaffected: it is always a plain
+  /// <c>enum</c> of the names it is written under.
+  /// </summary>
+  public EnumStyle EnumStyle { get; init; } = EnumStyle.OneOfConstTitle;
 
   /// <summary>How an unmapped property type is reported.</summary>
   public UnmappedTypePolicy UnmappedTypes { get; init; } = UnmappedTypePolicy.Error;
+
+  /// <summary>
+  /// The attributes exposed as <c>x-decorators</c> when <see cref="Decorators" /> is not set: the
+  /// declarative validation and description attributes a schema reader is likely to want, and nothing that
+  /// only matters to the compiler or the runtime.
+  /// </summary>
+  /// <remarks>
+  /// Part of the output contract — changing this list changes every consumer's documents.
+  /// </remarks>
+  public static IReadOnlyList<string> DefaultDecorators { get; } =
+  [
+    "System.ComponentModel.DataAnnotations.*",
+    "System.ComponentModel.DefaultValueAttribute",
+    "System.ComponentModel.DescriptionAttribute",
+    "System.ComponentModel.DisplayNameAttribute",
+    "System.ObsoleteAttribute",
+  ];
+
+  /// <summary>
+  /// The attributes exposed as <c>x-decorators</c>, and translated into standard keywords where one fits,
+  /// replacing <see cref="DefaultDecorators" />; <see langword="null" /> keeps the defaults. Each entry is an
+  /// attribute's full name, a namespace wildcard <c>Ns.*</c> (types directly in <c>Ns</c>, not in its
+  /// sub-namespaces) or <c>*</c>.
+  /// </summary>
+  public IReadOnlyList<string>? Decorators { get; init; }
+
+  /// <summary>Patterns added to <see cref="Decorators" /> (or to the defaults it stands in for).</summary>
+  public IReadOnlyList<string> DecoratorsAllow { get; init; } = [];
+
+  /// <summary>
+  /// Patterns removed from the selection after <see cref="DecoratorsAllow" /> is added; deny always wins.
+  /// <c>*</c> switches the feature off.
+  /// </summary>
+  public IReadOnlyList<string> DecoratorsDeny { get; init; } = [];
 }
 
 /// <summary>Which <c>minimum</c> / <c>maximum</c> bounds are emitted for the fixed-width integers.</summary>
@@ -73,17 +111,30 @@ public enum IntegerBoundsMode
   All,
 }
 
-/// <summary>How an enum that serialises as a number carries its member names.</summary>
-public enum NumericEnumStyle
+/// <summary>
+/// The shape an enum value takes. Every style keeps <c>type</c> (<c>integer</c>, or <c>string</c> under a string
+/// converter); they differ in how the member names travel. A name is always the C# member name, because the
+/// value already is the JSON one: a string enum renamed by <c>[JsonStringEnumMemberName]</c> or a naming
+/// policy writes <c>"in-person"</c>, and only the name says it is <c>InPerson</c>.
+/// </summary>
+public enum EnumStyle
 {
   /// <summary>
   /// A <c>oneOf</c> of annotated constants — <c>{"const":0,"title":"Student"}</c> — so the names survive
-  /// for code generation and review while the constraint stays numeric.
+  /// for code generation and review while the constraint stays on the values. Standard JSON Schema.
   /// </summary>
   OneOfConstTitle,
 
-  /// <summary>A bare <c>{"type":"integer","enum":[0,1,...]}</c>. Terser, and the names are lost.</summary>
+  /// <summary>A bare <c>{"enum":[0,1,...]}</c>. Terser, and the names are lost.</summary>
   Enum,
+
+  /// <summary>
+  /// An <c>enum</c> of the values beside an <c>x-enumNames</c> array of the names, in the same order — the
+  /// shape NSwag popularised, and the one several code generators look for. <c>x-enumNames</c> is a vendor
+  /// keyword: Draft 2020-12 treats an unknown keyword as an annotation, but a strict validator (Ajv in its
+  /// default strict mode, for one) rejects the schema unless the keyword is registered with it.
+  /// </summary>
+  EnumWithNames,
 }
 
 /// <summary>What happens when a property's type has no JSON Schema mapping.</summary>

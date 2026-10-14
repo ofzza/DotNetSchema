@@ -1,4 +1,6 @@
-﻿using DotNetSchema.Fixtures.Schema.Enums;
+﻿using System.ComponentModel;
+using DotNetSchema.Fixtures.Schema.Decorators;
+using DotNetSchema.Fixtures.Schema.Enums;
 using DotNetSchema;
 
 namespace DotNetSchema.Fixtures.Schema;
@@ -8,6 +10,11 @@ namespace DotNetSchema.Fixtures.Schema;
 /// the sister schools it shares a charter with (a directly recursive edge).
 /// </summary>
 [DotNetSchema("school.json")]
+[Description("A school: the root of the fixture graph.")]
+[SampleDecorator]
+[SampleTag("beta")]
+[SampleTag("alpha", 3, 1, 2)]
+[SampleTag("alpha")]
 public sealed record School
 {
   /// <summary>Stable identity of the school.</summary>

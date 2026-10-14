@@ -36,6 +36,21 @@ public sealed partial class JsonSchemaGeneratorTests
   }
 
   [Theory]
+  [InlineData(EnumStyle.Enum)]
+  [InlineData(EnumStyle.EnumWithNames)]
+  public void ARealFixtureGraph_ValidatesUnderEveryOtherEnumStyle(EnumStyle style)
+  {
+    // The default style is covered above; the others carry the same values in a different shape.
+    IFixturesService fixtures = new FixturesService();
+    var instance = JsonSerializer.SerializeToNode(fixtures.Generate(7), Serialisation);
+    var document = Document(SchemaGenerationOptions.Default with { EnumStyle = style }, typeof(School));
+
+    var failures = JsonSchemaValidator.Validate(instance, document, "School");
+
+    Assert.Empty(failures);
+  }
+
+  [Theory]
   [InlineData(1)]
   [InlineData(99)]
   public void TheScalarCoverageRecord_ValidatesAgainstItsSchema(int seed)
@@ -49,11 +64,14 @@ public sealed partial class JsonSchemaGeneratorTests
     Assert.Empty(failures);
   }
 
-  [Fact]
-  public void TheValidator_ImplementsEveryKeywordTheGeneratorEmits()
+  [Theory]
+  [InlineData(EnumStyle.OneOfConstTitle)]
+  [InlineData(EnumStyle.Enum)]
+  [InlineData(EnumStyle.EnumWithNames)]
+  public void TheValidator_ImplementsEveryKeywordTheGeneratorEmits(EnumStyle style)
   {
     // Without this the validating tests above could pass by ignoring a keyword they do not understand.
-    var document = Document(typeof(School));
+    var document = Document(SchemaGenerationOptions.Default with { EnumStyle = style }, typeof(School));
 
     Assert.Empty(JsonSchemaValidator.Unsupported(document).Except(JsonSchemaValidator.KnownKeywords));
   }

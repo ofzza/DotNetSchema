@@ -55,6 +55,38 @@ public static class MetadataFacts
   /// </summary>
   public static string TypeKey(Type type) => $"{type.FullName}, {type.Assembly.GetName().Name}";
 
+  /// <summary>
+  /// A readable, load-context-independent name for a type: <c>System.Collections.Generic.List&lt;System.Int32&gt;</c>
+  /// for a constructed generic, <c>System.Collections.Generic.List&lt;T&gt;</c> for an open one.
+  /// </summary>
+  /// <remarks>
+  /// Not <see cref="Type.FullName" />, which for a constructed generic embeds each argument's
+  /// assembly-qualified name — <c>System.Private.CoreLib</c> at runtime, <c>System.Runtime</c> through a
+  /// metadata-only read, with versions and tokens on top — so the two reads would disagree.
+  /// </remarks>
+  public static string TypeName(Type type)
+  {
+    if (type.IsGenericParameter)
+    {
+      return type.Name;
+    }
+
+    if (type.IsArray)
+    {
+      return $"{TypeName(type.GetElementType()!)}[{new string(',', type.GetArrayRank() - 1)}]";
+    }
+
+    if (!type.IsGenericType)
+    {
+      return type.FullName ?? type.Name;
+    }
+
+    var definition = type.GetGenericTypeDefinition().FullName ?? type.Name;
+    var arity = definition.IndexOf('`', StringComparison.Ordinal);
+    var stem = arity < 0 ? definition : definition[..arity];
+    return $"{stem}<{string.Join(", ", type.GetGenericArguments().Select(TypeName))}>";
+  }
+
   /// <summary>Whether the type is <c>Nullable&lt;T&gt;</c>, and if so what <c>T</c> is.</summary>
   public static bool IsNullableOfT(Type type, out Type underlying)
   {

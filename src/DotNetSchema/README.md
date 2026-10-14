@@ -74,6 +74,10 @@ Every one of these is an ordinary MSBuild property, set in the host `.csproj` (o
 | `DotNetSchemaScanProjectReferences` | `true` | Set `false` to export only this project's own marked types. |
 | `DotNetSchemaIncludeInPublish` | `true` | Whether the documents are also copied to `$(PublishDir)`. |
 | `DotNetSchemaFailOnEmpty` | `false` | Fail the build when nothing is marked. Worth turning on in CI. |
+| `DotNetSchemaEnumStyle` | `OneOfConstTitle` | How enum values carry their member names: `OneOfConstTitle` (a `oneOf` of titled constants, standard), `EnumWithNames` (`enum` plus the `x-enumNames` vendor keyword) or `Enum` (values only). |
+| `DotNetSchemaDecorators` | *(empty: the default list)* | Which attributes are exposed under `x-decorators` and mapped to standard keywords, replacing the default list. See [Attributes](#attributes-x-decorators). |
+| `DotNetSchemaDecoratorsAllow` | *(empty)* | Attributes added to that list. |
+| `DotNetSchemaDecoratorsDeny` | *(empty)* | Attributes removed from it, deny winning. `*` switches the feature off. |
 | `DotNetSchemaToolPath` | *(empty)* | Escape hatch: run a specific prebuilt export tool. |
 
 For example, to keep the documents in the source tree where a front end can pick them up:
@@ -128,10 +132,63 @@ limit — `Person.mentor` pointing back at `#/$defs/Person` is a complete answer
 cross-document `$ref`s, so a file can be handed to a code generator on its own.
 
 **The schema describes what System.Text.Json writes**, not how the C# is declared. Property names are
-camelCase; `[JsonPropertyName]`, `[JsonIgnore]` and `[JsonPropertyOrder]` are honoured; and where the
-serialiser's output does not match the obvious JSON Schema keyword, the document says what is true rather
-than what is tidy. See [the generator's README](https://github.com/ofzza/DotNetSchema/blob/master/src/DotNetSchema.Generator/README.md) for
-the full mapping table and the three places that bites.
+camelCase; `[JsonPropertyName]`, `[JsonIgnore]`, `[JsonPropertyOrder]` and `[JsonRequired]` are honoured;
+and where the serialiser's output does not match the obvious JSON Schema keyword, the document says what
+is true rather than what is tidy. See [the generator's README](https://github.com/ofzza/DotNetSchema/blob/master/src/DotNetSchema.Generator/README.md)
+for the full mapping table and the three places that bites. The one deliberate exception is the keywords
+mapped from validation attributes, described [below](#attributes-x-decorators).
+
+### Attributes: `x-decorators`
+
+Attributes on a model, an enum or a property are listed under the vendor keyword `x-decorators`, with
+their constructor arguments (by parameter name) and named arguments. The well-known validation and
+description attributes are also translated into the standard keywords that say the same thing:
+
+```csharp
+[Range(1, 99)] public required byte Edition { get; init; }
+```
+
+```json
+"edition": {
+  "type": "integer", "minimum": 1, "maximum": 99,
+  "x-decorators": [
+    { "name": "System.ComponentModel.DataAnnotations.RangeAttribute",
+      "arguments": { "minimum": 1, "maximum": 99 } }
+  ]
+}
+```
+
+Which attributes take part is a list of attribute full names, namespace wildcards (`Ns.*`, types directly
+in `Ns`) or `*`, separated by `;`. The default list is `System.ComponentModel.DataAnnotations.*`, plus
+`DescriptionAttribute`, `DefaultValueAttribute` and `DisplayNameAttribute` from `System.ComponentModel`, and
+`System.ObsoleteAttribute`. `DotNetSchemaDecorators` replaces it, `DotNetSchemaDecoratorsAllow` adds to it and
+`DotNetSchemaDecoratorsDeny` takes away, deny winning:
+
+```xml
+<PropertyGroup>
+  <!-- Our own attributes as well, but no length limits. -->
+  <DotNetSchemaDecoratorsAllow>MyCompany.Models.Annotations.*</DotNetSchemaDecoratorsAllow>
+  <DotNetSchemaDecoratorsDeny>System.ComponentModel.DataAnnotations.StringLengthAttribute</DotNetSchemaDecoratorsDeny>
+</PropertyGroup>
+```
+
+An attribute left out yields neither its `x-decorators` entry nor its keywords. MSBuild cannot tell an
+empty property from an unset one, so to switch the feature off set `DotNetSchemaDecoratorsDeny` to `*`.
+Compiler attributes, the System.Text.Json attributes (already reflected in the schema) and this package's
+own are never listed.
+
+Two things worth knowing:
+
+- **The mapped keywords describe validation the model declares, which System.Text.Json does not enforce.**
+  A `[Range(1, 10)]` property holding `42` serialises without complaint and then fails the schema. Deny the
+  attribute if a schema consumer must accept everything the serialiser can produce.
+- **DataAnnotations `[Required]` does not make a property `required`.** It is a non-null, non-empty check
+  run after deserialising, while JSON Schema's `required` is a presence check. Use the C# `required`
+  modifier or `[JsonRequired]` — System.Text.Json enforces both, and both are reflected.
+
+On a positional record, an attribute written without a `property:` target lands on the constructor
+parameter; it is read from there too. The full rules — value rendering, the keyword table, placement — are
+in [the generator's README](https://github.com/ofzza/DotNetSchema/blob/master/src/DotNetSchema.Generator/README.md#decorators).
 
 ## Diagnostics
 
@@ -150,6 +207,8 @@ Reported in MSBuild's canonical form, so they arrive as ordinary build errors an
 | `DNS0010` | warning | An assembly yielded types that could not be loaded; the rest were scanned. |
 | `DNS0011` | warning | Reference-typed members with no nullability metadata; treated as non-nullable. |
 | `DNS0012` | warning | A dictionary keyed by a floating-point type. |
+| `DNS0014` | warning | A type's or property's attributes could not be read; its decorators were left out. |
+| `DNS0015` | warning | A selected attribute's standard keyword does not fit the property (say, `[Range]` on a string); it stays in `x-decorators` only. |
 | `DNS0000` | error | The tool itself failed; the message carries the exception. |
 | `DNS0013` | error | Nothing was marked, and `DotNetSchemaFailOnEmpty` is set. |
 | `DNS1001` | error | The export tool could not be located. Raised by the targets, not the tool. |

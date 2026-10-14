@@ -176,6 +176,16 @@ public sealed partial class JsonSchemaGeneratorTests
   }
 
   [Fact]
+  public void AJsonRequiredPropertyOnAPositionalRecord_IsRequired_AndItsConstructorParametersAreNot()
+  {
+    // A positional record's parameters carry neither marker, so they stay optional beside the one
+    // [JsonRequired] property declared in its body.
+    var bookmark = Definition("Bookmark", typeof(DotNetSchema.Fixtures.Schema.Decorators.Bookmark));
+
+    Assert.Equal(["revision"], Required(bookmark));
+  }
+
+  [Fact]
   public void EachNullableTwin_HasExactlyThePropertiesOfThePlainBundleItMirrors()
   {
     var definitions = Document(typeof(School))["$defs"]!;
