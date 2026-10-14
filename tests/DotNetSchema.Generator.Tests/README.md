@@ -30,6 +30,7 @@ DotNetSchema.Generator.Tests/
   JsonSchemaGeneratorTests.Determinism.cs   metadata-only vs runtime; newlines; no BOM
   JsonSchemaGeneratorTests.Goldens.cs       whole documents by digest, salient definitions verbatim
   JsonSchemaGeneratorTests.Diagnostics.cs   one case per DNS code
+  JsonSchemaGeneratorTests.Decorators.cs    x-decorators rendering, keyword mapping, and the List / Allow / Deny selection
   JsonSchemaGeneratorTests.Validates.cs     real fixture graphs against the generated schema
   JsonSchemaValidator.cs                    a validator for exactly the keywords the generator emits
   SchemaDigest.cs                           SHA-256 of a document
@@ -79,9 +80,15 @@ not, the change is wrong.
 
 ## Where coverage stops
 
-Two diagnostics have no test. `DNS0010` needs an assembly that partially fails to load, which cannot be
+Three diagnostics have no test. `DNS0010` needs an assembly that partially fails to load, which cannot be
 produced without shipping a broken binary. `DNS0011` needs a model assembly compiled without nullable
-reference types, and every project here enables them. Both are exercised by inspection only.
+reference types, and every project here enables them. `DNS0014` needs an attribute argument naming a type
+from an assembly the metadata-only load cannot resolve, which the fixtures cannot express without a
+missing dependency. All three are exercised by inspection only.
+
+The decorator rendering is pinned on both read paths by
+`ReadingDecoratorsForMetadataOnly_ProducesTheSameBytesAsReadingThemAtRuntime`, which runs with every
+attribute allowed so that each kind of argument is decoded both ways.
 
 ## License
 

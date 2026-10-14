@@ -1,8 +1,12 @@
-﻿namespace DotNetSchema.Fixtures.Schema;
+﻿using System.ComponentModel;
+using DotNetSchema.Fixtures.Schema.Decorators;
+namespace DotNetSchema.Fixtures.Schema;
 
 /// <summary>
 /// A physical site of a <see cref="School" />.
 /// </summary>
+[DisplayName("Campus site")]
+[SampleDecorator(Note = "named", Shade = SampleShade.Blue, Weight = 0.5, Kind = typeof(Campus), Numbers = [7, 8])]
 public sealed record Campus
 {
   /// <summary>Stable identity of the campus.</summary>

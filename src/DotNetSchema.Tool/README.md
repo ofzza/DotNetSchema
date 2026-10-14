@@ -26,8 +26,13 @@ reaches a shell.
 | `--manifest=<path>` | no | File recording what was produced. |
 | `--fail-on-empty=true\|false` | no | Whether producing nothing is an error. |
 | `--enum-style=<style>` | no | `OneOfConstTitle` (default), `EnumWithNames` or `Enum`, ignoring case. Anything else, a number included, is `DNS0000`. |
+| `--decorators=<patterns>` | yes | `;`-separated attribute patterns (full name, `Ns.*` or `*`) replacing the generator's default decorator list. Given at all, even empty, it replaces the list. |
+| `--decorators-allow=<patterns>` | yes | Patterns added to the decorator list. |
+| `--decorators-deny=<patterns>` | yes | Patterns removed from the decorator list, deny winning. |
 
-A path containing `;` is not supported: MSBuild splits item lists on it long before the tool sees it.
+A path containing `;` is not supported: MSBuild splits item lists on it long before the tool sees it. The
+decorator lists are the exception that proves the rule — the targets escape each one so it arrives as one
+line, and the tool does the splitting.
 
 ## What it does that is not obvious
 
@@ -67,7 +72,8 @@ DotNetSchema.Tool/
 
 `MetadataLoadContextFactory`, `SchemaFileWriter` and `ToolArguments` are public so another front end
 (a CLI, a test harness) can drive the same metadata-only load and the same idempotent writes. Treat their
-signatures as API.
+signatures as API. `ToolArguments` gained `Decorators`, `DecoratorsAllow` and `DecoratorsDeny` (after `EnumStyle`) in the
+release that introduced `x-decorators`.
 
 ## Tests
 

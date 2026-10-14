@@ -21,6 +21,14 @@
       code generators that only look for the vendor keyword.
     -->
     <DotNetSchemaEnumStyle>EnumWithNames</DotNetSchemaEnumStyle>
+    <!--
+      Optional: adjust which attributes are exposed under x-decorators (and mapped to standard keywords).
+      Allow adds the models' own attributes to the default list; Deny takes defaults back out - here
+      StringLength, so Customer.Name gets no maxLength. Both are ';'-separated lists of attribute full names,
+      Ns.* wildcards or '*'; DotNetSchemaDecorators would replace the default list outright.
+    -->
+    <DotNetSchemaDecoratorsAllow>DotNetSchema.Sample.Models.*</DotNetSchemaDecoratorsAllow>
+    <DotNetSchemaDecoratorsDeny>System.ObsoleteAttribute;System.ComponentModel.DataAnnotations.StringLengthAttribute</DotNetSchemaDecoratorsDeny>
   </PropertyGroup>
 
   <ItemGroup>

@@ -20,12 +20,19 @@ public static class JsonSchemaValidator
   private static readonly string[] Known =
   [
     "$ref", "$comment", "title", "type", "enum", "const", "oneOf", "anyOf", "properties", "required",
-    "items", "propertyNames", "additionalProperties", "minimum", "maximum", "minLength", "maxLength",
-    "pattern", "format", "contentEncoding",
+    "items", "propertyNames", "additionalProperties", "minimum", "maximum", "exclusiveMinimum",
+    "exclusiveMaximum", "minLength", "maxLength", "minItems", "maxItems", "pattern", "format",
+    "contentEncoding",
 
-    // An annotation, never checked: it names the members of the enum beside it and constrains nothing.
-    "x-enumNames",
+    // Annotations, never checked: they describe the value beside them and constrain nothing.
+    "description", "default", "deprecated", "x-enumNames", "x-decorators",
   ];
+
+  /// <summary>
+  /// Keywords whose value is data rather than a schema, so the keyword scan must not mistake the keys inside
+  /// it — an <c>x-decorators</c> entry's <c>name</c> and <c>arguments</c>, say — for keywords.
+  /// </summary>
+  private static readonly string[] Opaque = ["default", "x-decorators"];
 
   /// <summary>Validates an instance against a document, returning one message per failure.</summary>
   /// <param name="instance">The serialised value to check.</param>
@@ -66,7 +73,10 @@ public static class JsonSchemaValidator
             }
 
             found.Add(key);
-            Walk(value);
+            if (!Opaque.Contains(key, StringComparer.Ordinal))
+            {
+              Walk(value);
+            }
           }
 
           break;
@@ -147,12 +157,8 @@ public static class JsonSchemaValidator
         CheckObject(o, schema, defs, path, failures);
         break;
 
-      case JsonArray a when schema["items"] is JsonObject items:
-        for (var i = 0; i < a.Count; i++)
-        {
-          Check(a[i], items, defs, $"{path}[{i}]", failures);
-        }
-
+      case JsonArray a:
+        CheckArray(a, schema, defs, path, failures);
         break;
     }
   }
@@ -190,6 +196,42 @@ public static class JsonSchemaValidator
     if (schema["maximum"]?.GetValue<decimal>() is { } max && value > max)
     {
       failures.Add($"{path}: {value} is above maximum {max}.");
+    }
+
+    if (schema["exclusiveMinimum"]?.GetValue<decimal>() is { } floor && value <= floor)
+    {
+      failures.Add($"{path}: {value} is not above exclusiveMinimum {floor}.");
+    }
+
+    if (schema["exclusiveMaximum"]?.GetValue<decimal>() is { } ceiling && value >= ceiling)
+    {
+      failures.Add($"{path}: {value} is not below exclusiveMaximum {ceiling}.");
+    }
+  }
+
+  private static void CheckArray(
+    JsonArray instance,
+    JsonObject schema,
+    JsonObject defs,
+    string path,
+    List<string> failures)
+  {
+    if (schema["minItems"]?.GetValue<int>() is { } min && instance.Count < min)
+    {
+      failures.Add($"{path}: fewer than minItems {min}.");
+    }
+
+    if (schema["maxItems"]?.GetValue<int>() is { } max && instance.Count > max)
+    {
+      failures.Add($"{path}: more than maxItems {max}.");
+    }
+
+    if (schema["items"] is JsonObject items)
+    {
+      for (var i = 0; i < instance.Count; i++)
+      {
+        Check(instance[i], items, defs, $"{path}[{i}]", failures);
+      }
     }
   }
 
@@ -259,6 +301,11 @@ public static class JsonSchemaValidator
     "uuid" => Guid.TryParseExact(text, "D", out _),
     "date" => DateOnly.TryParseExact(text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _),
     "date-time" => DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None, out _),
+
+    // Deliberately loose, like the attributes these come from: one '@' with something either side, and an
+    // absolute URI.
+    "email" => text.IndexOf('@') is > 0 and var at && at == text.LastIndexOf('@') && at < text.Length - 1,
+    "uri" => Uri.TryCreate(text, UriKind.Absolute, out _),
     _ => true,
   };
 

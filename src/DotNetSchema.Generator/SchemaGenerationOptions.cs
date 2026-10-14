@@ -58,6 +58,40 @@ public sealed record SchemaGenerationOptions
 
   /// <summary>How an unmapped property type is reported.</summary>
   public UnmappedTypePolicy UnmappedTypes { get; init; } = UnmappedTypePolicy.Error;
+
+  /// <summary>
+  /// The attributes exposed as <c>x-decorators</c> when <see cref="Decorators" /> is not set: the
+  /// declarative validation and description attributes a schema reader is likely to want, and nothing that
+  /// only matters to the compiler or the runtime.
+  /// </summary>
+  /// <remarks>
+  /// Part of the output contract — changing this list changes every consumer's documents.
+  /// </remarks>
+  public static IReadOnlyList<string> DefaultDecorators { get; } =
+  [
+    "System.ComponentModel.DataAnnotations.*",
+    "System.ComponentModel.DefaultValueAttribute",
+    "System.ComponentModel.DescriptionAttribute",
+    "System.ComponentModel.DisplayNameAttribute",
+    "System.ObsoleteAttribute",
+  ];
+
+  /// <summary>
+  /// The attributes exposed as <c>x-decorators</c>, and translated into standard keywords where one fits,
+  /// replacing <see cref="DefaultDecorators" />; <see langword="null" /> keeps the defaults. Each entry is an
+  /// attribute's full name, a namespace wildcard <c>Ns.*</c> (types directly in <c>Ns</c>, not in its
+  /// sub-namespaces) or <c>*</c>.
+  /// </summary>
+  public IReadOnlyList<string>? Decorators { get; init; }
+
+  /// <summary>Patterns added to <see cref="Decorators" /> (or to the defaults it stands in for).</summary>
+  public IReadOnlyList<string> DecoratorsAllow { get; init; } = [];
+
+  /// <summary>
+  /// Patterns removed from the selection after <see cref="DecoratorsAllow" /> is added; deny always wins.
+  /// <c>*</c> switches the feature off.
+  /// </summary>
+  public IReadOnlyList<string> DecoratorsDeny { get; init; } = [];
 }
 
 /// <summary>Which <c>minimum</c> / <c>maximum</c> bounds are emitted for the fixed-width integers.</summary>

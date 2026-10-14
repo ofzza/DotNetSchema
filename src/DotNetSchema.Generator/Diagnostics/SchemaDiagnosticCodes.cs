@@ -38,4 +38,10 @@ public static class SchemaDiagnosticCodes
 
   /// <summary>A dictionary keyed by a floating-point type, whose keys will not agree across languages.</summary>
   public const string FloatingPointDictionaryKey = "DNS0012";
+
+  /// <summary>The attributes on a type or property could not be read; its decorators were skipped.</summary>
+  public const string DecoratorUnreadable = "DNS0014";
+
+  /// <summary>A selected attribute's standard keyword does not apply to the property's schema.</summary>
+  public const string DecoratorNotApplicable = "DNS0015";
 }

@@ -35,6 +35,23 @@ public static class EnumFacts
     return [.. members.OrderBy(m => m.SortKey).ThenBy(m => m.MetadataToken)];
   }
 
+  /// <summary>
+  /// The C# name of the member holding a raw value, or <see langword="null" /> when none does — a
+  /// <c>[Flags]</c> combination, or a value the enum never declared. Of several members sharing the value,
+  /// the first declared wins.
+  /// </summary>
+  public static string? ClrNameOf(Type type, object? raw)
+  {
+    var key = ToSortKey(raw);
+
+    return type
+      .GetFields(BindingFlags.Public | BindingFlags.Static)
+      .Where(field => field.IsLiteral && ToSortKey(field.GetRawConstantValue()) == key)
+      .OrderBy(field => field.MetadataToken)
+      .Select(field => field.Name)
+      .FirstOrDefault();
+  }
+
   /// <summary>The primitive the enum's values are stored as.</summary>
   /// <remarks>
   /// Read from the <c>value__</c> instance field rather than through <c>Type.GetEnumUnderlyingType</c>,

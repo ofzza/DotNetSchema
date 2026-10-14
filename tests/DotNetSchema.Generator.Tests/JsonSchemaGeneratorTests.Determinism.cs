@@ -45,6 +45,23 @@ public sealed partial class JsonSchemaGeneratorTests
   }
 
   [Fact]
+  public void ReadingDecoratorsForMetadataOnly_ProducesTheSameBytesAsReadingThemAtRuntime()
+  {
+    // The same invariant with every attribute allowed, so each kind of attribute argument — types, enums,
+    // boxed values, arrays — is decoded both ways. A Type argument's FullName alone would already differ:
+    // a constructed generic embeds System.Private.CoreLib at runtime and System.Runtime through metadata.
+    var options = SchemaGenerationOptions.Default with { DecoratorsAllow = ["*"] };
+    var fromRuntime = new JsonSchemaGenerator().Generate([FixturesAssembly], options);
+
+    using var context = MetadataOnly();
+    var fixtures = context.LoadFromAssemblyPath(FixturesAssembly.Location);
+    var fromMetadata = new JsonSchemaGenerator().Generate([fixtures], options);
+
+    Assert.Contains(fromRuntime.Documents, d => d.Json.Contains("SampleDecoratorAttribute", StringComparison.Ordinal));
+    Assert.Equal(fromRuntime.Documents.Select(d => d.Json), fromMetadata.Documents.Select(d => d.Json));
+  }
+
+  [Fact]
   public void GeneratingTwice_ProducesTheSameBytes()
   {
     var first = new JsonSchemaGenerator().Generate([FixturesAssembly]);

@@ -10,6 +10,9 @@ namespace DotNetSchema.Tool;
 /// <param name="ManifestPath">File recording what was produced, so the build can track and prune it.</param>
 /// <param name="FailOnEmpty">Whether producing nothing is an error.</param>
 /// <param name="EnumStyle">The shape enum values take in the documents.</param>
+/// <param name="Decorators">Attribute patterns replacing the default decorator list, or <see langword="null" /> to keep it.</param>
+/// <param name="DecoratorsAllow">Attribute patterns added to the decorator list.</param>
+/// <param name="DecoratorsDeny">Attribute patterns removed from the decorator list.</param>
 public sealed record ToolArguments(
   IReadOnlyList<string> Scan,
   IReadOnlyList<string> References,
@@ -17,7 +20,10 @@ public sealed record ToolArguments(
   string DefaultFileName,
   string ManifestPath,
   bool FailOnEmpty,
-  EnumStyle EnumStyle)
+  EnumStyle EnumStyle,
+  IReadOnlyList<string>? Decorators,
+  IReadOnlyList<string> DecoratorsAllow,
+  IReadOnlyList<string> DecoratorsDeny)
 {
   /// <summary>
   /// Parses <c>--key=value</c> arguments, expanding any <c>@file</c> into one argument per line.
@@ -26,6 +32,11 @@ public sealed record ToolArguments(
   /// The build always passes a response file. A full framework closure runs to well over a hundred paths,
   /// which exceeds the command-line length limit on Windows, and one <c>--key=value</c> per line needs no
   /// quoting and never reaches a shell.
+  /// <para>
+  /// The decorator arguments each carry a <c>;</c>-separated list, and may be repeated; the build passes an
+  /// MSBuild property through as one line. <c>--decorators</c> given at all, even empty, replaces the
+  /// default list.
+  /// </para>
   /// </remarks>
   public static ToolArguments Parse(IEnumerable<string> arguments)
   {
@@ -36,6 +47,9 @@ public sealed record ToolArguments(
     var manifestPath = string.Empty;
     var failOnEmpty = false;
     var enumStyle = EnumStyle.OneOfConstTitle;
+    List<string>? decorators = null;
+    List<string> decoratorsAllow = [];
+    List<string> decoratorsDeny = [];
 
     foreach (var argument in Expand(arguments))
     {
@@ -66,12 +80,31 @@ public sealed record ToolArguments(
         case "--enum-style":
           enumStyle = ParseEnumStyle(value);
           break;
+        case "--decorators":
+          (decorators ??= []).AddRange(Patterns(value));
+          break;
+        case "--decorators-allow":
+          decoratorsAllow.AddRange(Patterns(value));
+          break;
+        case "--decorators-deny":
+          decoratorsDeny.AddRange(Patterns(value));
+          break;
         default:
           throw new ArgumentException($"Unrecognised argument '{key}'.");
       }
     }
 
-    return new ToolArguments(scan, references, outputDirectory, defaultFileName, manifestPath, failOnEmpty, enumStyle);
+    return new ToolArguments(
+      scan,
+      references,
+      outputDirectory,
+      defaultFileName,
+      manifestPath,
+      failOnEmpty,
+      enumStyle,
+      decorators,
+      decoratorsAllow,
+      decoratorsDeny);
   }
 
   /// <summary>Reads an <see cref="EnumStyle" /> by member name, ignoring case.</summary>
@@ -84,6 +117,9 @@ public sealed record ToolArguments(
       ? Enum.Parse<EnumStyle>(name)
       : throw new ArgumentException(
         $"Unrecognised enum style '{value}'; expected one of {string.Join(", ", Enum.GetNames<EnumStyle>())}.");
+
+  private static IEnumerable<string> Patterns(string value) =>
+    value.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
   private static IEnumerable<string> Expand(IEnumerable<string> arguments)
   {
