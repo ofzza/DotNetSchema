@@ -255,6 +255,12 @@ public sealed partial class FixturesService : IFixturesService
       GivenName = givenName,
       FamilyName = familyName,
       Role = effectiveRole,
+
+      // Drawn from a seed of its own rather than the record's random, so adding the property moved none of the
+      // values the record already had.
+      StudentNumber = effectiveRole == PersonRole.Student
+            ? new StudentNumber(new StableRandom(seed.Derive(nameof(Person.StudentNumber)).Value).NextInt32(0, 10_000_000))
+            : null,
       BornOn = effectiveRole == PersonRole.Student
             ? random.NextDateOnly(new DateOnly(2001, 1, 1), 2_600)
             : random.NextDateOnly(new DateOnly(1958, 1, 1), 14_600),
@@ -448,6 +454,9 @@ public sealed partial class FixturesService : IFixturesService
     return new Book
     {
       Id = random.NextGuid(),
+
+      // Drawn from a seed of its own, like Person.StudentNumber, so no existing value moved.
+      CatalogueId = new CatalogueId<Book>(new StableRandom(seed.Derive(nameof(Book.CatalogueId)).Value).NextGuid()),
       Name = name ?? random.PickEnum<BookName>(),
       Isbn = OrNull(
             string.Create(

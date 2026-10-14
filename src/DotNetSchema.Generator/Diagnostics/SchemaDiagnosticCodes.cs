@@ -44,4 +44,20 @@ public static class SchemaDiagnosticCodes
 
   /// <summary>A selected attribute's standard keyword does not apply to the property's schema.</summary>
   public const string DecoratorNotApplicable = "DNS0015";
+
+  /// <summary>
+  /// A type mapping, configured or declared with <c>[DotNetSchemaType]</c>, is malformed; it was ignored.
+  /// </summary>
+  public const string InvalidTypeMapping = "DNS0016";
+
+  /// <summary>A configured type mapping matched no type any document reached.</summary>
+  public const string TypeMappingUnused = "DNS0017";
+
+  /// <summary>A type marked for export is also mapped, so it cannot be a document's definition.</summary>
+  public const string MappedRoot = "DNS0018";
+
+  /// <summary>
+  /// A model position is governed by a <c>[JsonConverter]</c> and has no type mapping, so its shape is unknown.
+  /// </summary>
+  public const string ConverterWithoutMapping = "DNS0019";
 }

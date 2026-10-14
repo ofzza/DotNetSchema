@@ -17,4 +17,4 @@ public sealed record Customer(
   IReadOnlyList<Order> Orders);
 
 /// <summary>Not marked: carried into the document because <see cref="Customer" /> reaches it.</summary>
-public sealed record Address(string Street, string City, string PostalCode, string Country);
+public sealed record Address(string Street, string City, string PostalCode, CountryCode Country);

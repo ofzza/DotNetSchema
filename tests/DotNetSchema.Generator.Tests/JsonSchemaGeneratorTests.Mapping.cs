@@ -1,4 +1,6 @@
-﻿using DotNetSchema.Fixtures.Schema;
+﻿using System.Text.Json.Nodes;
+using DotNetSchema.Fixtures.Schema;
+using DotNetSchema.Generator.Diagnostics;
 
 namespace DotNetSchema.Generator.Tests;
 
@@ -125,5 +127,93 @@ public sealed partial class JsonSchemaGeneratorTests
     var register = Definition("ScalarRegister", typeof(ScalarRegister));
 
     Assert.Equal(expected, Compact(Property(register, property)["propertyNames"]));
+  }
+
+  /// <summary>Options without comments, so a mapped schema can be asserted as one short literal.</summary>
+  private static SchemaGenerationOptions Uncommented => SchemaGenerationOptions.Default with { EmitComments = false };
+
+  private const string StudentNumberName = "DotNetSchema.Fixtures.Schema.StudentNumber";
+  private const string ClassNameName = "DotNetSchema.Fixtures.Schema.Enums.ClassName";
+
+  [Fact]
+  public void ADeclaredType_IsDescribedInline_AndGetsNoDefinition()
+  {
+    var document = Document(Uncommented, typeof(School));
+    var person = (JsonObject)document["$defs"]!["Person"]!;
+
+    // Nullable through the type array, like an inline scalar, not through the anyOf a $ref would need.
+    Assert.Equal("""{"type":["string","null"],"pattern":"^S\\d{7}$"}""", Compact(Property(person, "studentNumber")));
+    Assert.Null(document["$defs"]!["StudentNumber"]);
+  }
+
+  [Fact]
+  public void AGenericDeclaration_CoversEveryConstruction_AndRescuesItFromBeingAGenericModel()
+  {
+    var result = Generate(Uncommented, typeof(School));
+    var document = (JsonObject)JsonNode.Parse(Assert.Single(result.Documents).Json)!;
+
+    Assert.DoesNotContain(result.Diagnostics, d => d.Code == SchemaDiagnosticCodes.GenericModel);
+    Assert.Equal(
+      """{"type":"string","format":"uuid"}""",
+      Compact(Property((JsonObject)document["$defs"]!["Book"]!, "catalogueId")));
+    Assert.DoesNotContain(Assert.Single(result.Documents).DefinitionNames, n => n.Contains("Catalogue", StringComparison.Ordinal));
+  }
+
+  [Fact]
+  public void AConfiguredMapping_BeatsTheTypesOwnDeclaration()
+  {
+    var options = Uncommented with { TypeMappings = [new TypeMapping(StudentNumberName, "integer")] };
+
+    var person = Definition("Person", options, typeof(School));
+
+    Assert.Equal("""{"type":["integer","null"]}""", Compact(Property(person, "studentNumber")));
+  }
+
+  [Fact]
+  public void AConfiguredMapping_CanReplaceABuiltInScalar()
+  {
+    // The case of an application writing 64-bit integers as strings for JavaScript readers.
+    var options = Uncommented with { TypeMappings = [new TypeMapping("System.Int64", "string", Pattern: "^-?\\d{1,20}$")] };
+
+    var battery = Definition("ScalarBattery", options, typeof(ScalarBattery));
+
+    Assert.Equal("""{"type":"string","pattern":"^-?\\d{1,20}$"}""", Compact(Property(battery, "elapsedTicks")));
+  }
+
+  [Fact]
+  public void AMappedType_SaysInItsCommentWhereTheDeclarationCameFrom()
+  {
+    var declared = Property(Definition("Person", typeof(School)), "studentNumber")["$comment"]!.GetValue<string>();
+    var configured = Property(
+        Definition(
+          "Person",
+          SchemaGenerationOptions.Default with { TypeMappings = [new TypeMapping(StudentNumberName, "string")] },
+          typeof(School)),
+        "studentNumber")["$comment"]!.GetValue<string>();
+
+    Assert.Contains("[DotNetSchemaType]", declared, StringComparison.Ordinal);
+    Assert.Contains("a DotNetSchemaType item", configured, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void AStringMappedKey_ConstrainsThePropertyNamesWithItsDeclaration()
+  {
+    var options = Uncommented with { TypeMappings = [new TypeMapping(ClassNameName, "string", Pattern: "^[A-Z]")] };
+
+    var grades = Property(Definition("Person", options, typeof(School)), "grades");
+
+    Assert.Equal("""{"type":"string","pattern":"^[A-Z]"}""", Compact(grades["propertyNames"]));
+  }
+
+  [Fact]
+  public void ANonStringMappedKey_LeavesTheKeyAsItWouldHaveBeen()
+  {
+    // Every key is written as a string, so an integer mapping speaks only for the value form.
+    var options = Uncommented with { TypeMappings = [new TypeMapping(ClassNameName, "integer")] };
+    var person = Definition("Person", options, typeof(School));
+
+    Assert.Equal(
+      Compact(Property(Definition("Person", Uncommented, typeof(School)), "grades")["propertyNames"]),
+      Compact(Property(person, "grades")["propertyNames"]));
   }
 }

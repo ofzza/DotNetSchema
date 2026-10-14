@@ -24,7 +24,7 @@ file its contract already occupies.
 DotNetSchema.Generator.Tests/
   JsonSchemaGeneratorTests.cs               shared helpers, and the testing marker
   JsonSchemaGeneratorTests.Discovery.cs     which types are found, and which document each lands in
-  JsonSchemaGeneratorTests.Mapping.cs       the scalar table and the dictionary key table
+  JsonSchemaGeneratorTests.Mapping.cs       the scalar table, the dictionary key table, and type mappings
   JsonSchemaGeneratorTests.Nullability.cs   required × nullable in all four combinations, every shape, and the twins
   JsonSchemaGeneratorTests.Recursion.cs     cycles, the full closure, and no bare objects
   JsonSchemaGeneratorTests.Determinism.cs   metadata-only vs runtime; newlines; no BOM
@@ -85,6 +85,11 @@ produced without shipping a broken binary. `DNS0011` needs a model assembly comp
 reference types, and every project here enables them. `DNS0014` needs an attribute argument naming a type
 from an assembly the metadata-only load cannot resolve, which the fixtures cannot express without a
 missing dependency. All three are exercised by inspection only.
+
+`DNS0016` and `DNS0017` are also raised by configuration rather than by a model, so their configuration
+cases are tested through `SchemaGenerationOptions.TypeMappings` directly. The MSBuild side of a type mapping —
+the `DotNetSchemaType` item becoming a `--type-mapping` line — is exercised by the sample host's build, not
+here.
 
 The decorator rendering is pinned on both read paths by
 `ReadingDecoratorsForMetadataOnly_ProducesTheSameBytesAsReadingThemAtRuntime`, which runs with every

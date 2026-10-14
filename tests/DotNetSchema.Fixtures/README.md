@@ -59,6 +59,8 @@ AssessmentRecord scalars = fixtures.GenerateAssessmentRecord(42);   // scalars o
 | The well-known validation and description attributes, on types, enums and properties | across the graph — see [Decorators](#decorators) |
 | Every kind of attribute argument | the `Schema/Decorators/` sampler attributes, on the graph — see [Decorators](#decorators) |
 | An attribute on a positional record's constructor parameter; `[JsonRequired]`; DataAnnotations `[Required]` | `Bookmark`, outside the graph — see [Decorators](#decorators) |
+| A type described inline by `[DotNetSchemaType]`, serialised by its own converter, nullable | `Person.StudentNumber` (`StudentNumber`, a `pattern`) |
+| A generic type mapped on its definition, covering a construction | `Book.CatalogueId` (`CatalogueId<Book>`, `format: uuid`, a converter factory) |
 
 ### What counts as "portable"
 
@@ -177,6 +179,7 @@ record Person {
     GivenName         : string
     FamilyName        : string
     Role              : PersonRole
+    StudentNumber?    : StudentNumber?                      // [DotNetSchemaType]: inline string, students only
     BornOn            : DateOnly
     Email?            : string?
     IsActive          : bool
@@ -232,6 +235,7 @@ record Library {
 
 record Book {
     Id                 : Guid
+    CatalogueId        : CatalogueId<Book>                  // generic, [DotNetSchemaType] on its definition
     Name               : BookName
     Isbn               : string?                            // [JsonRequired], not the modifier
     Edition            : byte
@@ -472,7 +476,7 @@ consumer that turns the schema into types (for example
 
 | | Required, non-null<br/>`required T X` → `x: T` | Optional, non-null<br/>`T X { get; init; } = …` → `x?: T` | Required, nullable<br/>`required T? X` → `x: T \| null` | Optional, nullable<br/>`T? X` → `x?: T \| null` |
 | --- | --- | --- | --- | --- |
-| scalar | most | `School.EnrollmentCap`, `Department.CostCentre`, `Assessment.IsOpenBook`, … | `Campus.OpenedOn`, `Person.GradePointAverage`, `Book.Isbn`, … | `School.Motto`, `Person.Email`, `Exercise.Difficulty`, … |
+| scalar | most | `School.EnrollmentCap`, `Department.CostCentre`, `Assessment.IsOpenBook`, … | `Campus.OpenedOn`, `Person.GradePointAverage`, `Book.Isbn`, … | `School.Motto`, `Person.Email`, `Exercise.Difficulty`, `Person.StudentNumber` (mapped), … |
 | array | most | `Person.Advisees`, `Class.Prerequisites`, `Chapter.SubChapters` | `Book.Authors` | `Class.Schedule` |
 | map | most | `Person.Grades` | `Library.Catalogue` | `Person.ContactMethods` |
 | enum | most | `Assessment.Kind` | `Room.Kind` | `Class.Term` |
@@ -683,12 +687,17 @@ JSON Schema documents into the output directory:
 | `ScalarRegister` | `schema.json` | The default file name, and a type defined in two documents at once. |
 
 The attributes change no generated value: a fixture graph is exactly what it was before they were added.
-That holds for the [decorators](#decorators) too.
+That holds for the [decorators](#decorators) too. The two mapped types, `StudentNumber` and `CatalogueId<T>`,
+are described inline rather than defined, and each carries a real `JsonConverter` that writes what its
+`[DotNetSchemaType]` declares — the validating tests serialise a generated graph through those converters and
+check it against the schema, which is the only thing keeping a declaration and its converter in agreement.
+Both values are drawn from seeds of their own, so adding them moved no other generated value.
 
 `Schema/Invalid/` is not part of the school graph and `FixturesService` never constructs any of it. It
 holds the shapes an exporter has to have an answer for — a property typed `object`, a generic model, a
 record used as a dictionary key, two types with the same short name, two properties with the same JSON
-name, a `[Range]` on a string — so that the diagnostics can be tested against real declarations rather
+name, a `[Range]` on a string, a malformed `[DotNetSchemaType]`, a marked type that is also mapped, a
+converter-written type with no mapping — so that the diagnostics can be tested against real declarations rather
 than against types invented inside a test. They carry `[ExportForTesting]` rather than `[DotNetSchema]`, because marking them
 properly would export them, and exporting them would fail this project's own build.
 

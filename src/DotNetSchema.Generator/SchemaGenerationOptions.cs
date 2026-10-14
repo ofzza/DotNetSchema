@@ -92,6 +92,17 @@ public sealed record SchemaGenerationOptions
   /// <c>*</c> switches the feature off.
   /// </summary>
   public IReadOnlyList<string> DecoratorsDeny { get; init; } = [];
+
+  /// <summary>
+  /// Types described inline by a declared schema rather than by their shape — the build's
+  /// <c>DotNetSchemaType</c> items. These take precedence over <c>[DotNetSchemaType]</c> on the type itself and
+  /// over the built-in mapping of the framework's primitives; of two entries for one type, the later wins.
+  /// </summary>
+  /// <remarks>
+  /// A mapping asserts how the type is serialised; nothing here can check it. That is the second deliberate
+  /// step beyond "the schema describes what System.Text.Json writes", after the decorator keywords.
+  /// </remarks>
+  public IReadOnlyList<TypeMapping> TypeMappings { get; init; } = [];
 }
 
 /// <summary>Which <c>minimum</c> / <c>maximum</c> bounds are emitted for the fixed-width integers.</summary>

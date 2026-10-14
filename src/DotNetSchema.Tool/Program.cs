@@ -25,6 +25,7 @@ try
     Decorators = arguments.Decorators,
     DecoratorsAllow = arguments.DecoratorsAllow,
     DecoratorsDeny = arguments.DecoratorsDeny,
+    TypeMappings = arguments.TypeMappings,
   };
   var result = new JsonSchemaGenerator().Generate(assemblies, options);
 

@@ -60,6 +60,9 @@ public sealed partial class JsonSchemaGeneratorTests
     { "Class", "schedule" },
     { "Person", "contactMethods" },
     { "Class", "term" },
+
+    // a mapped type, widened through its type array like an inline scalar
+    { "Person", "studentNumber" },
   };
 
   /// <summary>

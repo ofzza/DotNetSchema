@@ -63,7 +63,9 @@ EOF
 $ cat > Lib/Customer.cs <<'EOF'
 using DotNetSchema;
 namespace Lib;
-[DotNetSchema] public sealed record Customer(Guid Id, string Name, Customer? Referrer);
+[DotNetSchema] public sealed record Customer(Guid Id, string Name, Customer? Referrer, Email Email, Code Code);
+[DotNetSchemaType("string", Format = "email")] public readonly record struct Email(string Value);
+public readonly record struct Code(string Value);
 EOF
 $ cat > Host/Host.csproj <<'EOF'
 <Project Sdk="Microsoft.NET.Sdk">
@@ -74,6 +76,7 @@ $ cat > Host/Host.csproj <<'EOF'
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../Lib/Lib.csproj" />
+    <DotNetSchemaType Include="Lib.Code" Type="string" Pattern="^[A-Z]*;?$" />
   </ItemGroup>
 </Project>
 EOF
@@ -87,6 +90,7 @@ It passes when:
 
 - both builds succeed with no `DNS` warnings or errors;
 - `Host/bin/Debug/net10.0/Host.schema.json` exists, defines `Customer` in `$defs`, and is **not** rewritten by the second build (its timestamp does not move);
+- in it, `Customer.email` is `{"type":"string","format":"email",…}` and `Customer.code` is `{"type":"string","pattern":"^[A-Z]*;?$",…}` — the attribute and the item both reached the packaged tool — and neither `Email` nor `Code` is in `$defs`;
 - nothing `*.schema.json` appears under `Lib/bin/`;
 - `pub/Host.schema.json` exists;
 - neither csproj contains an `<Import>`.

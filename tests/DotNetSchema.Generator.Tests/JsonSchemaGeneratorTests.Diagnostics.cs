@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Nodes;
+using DotNetSchema.Fixtures.Schema;
 using DotNetSchema.Generator.Diagnostics;
 
 namespace DotNetSchema.Generator.Tests;
@@ -15,6 +16,9 @@ public sealed partial class JsonSchemaGeneratorTests
   [InlineData(SchemaDiagnosticCodes.PropertyNameCollision, SchemaDiagnosticSeverity.Warning)]
   [InlineData(SchemaDiagnosticCodes.FloatingPointDictionaryKey, SchemaDiagnosticSeverity.Warning)]
   [InlineData(SchemaDiagnosticCodes.DecoratorNotApplicable, SchemaDiagnosticSeverity.Warning)]
+  [InlineData(SchemaDiagnosticCodes.InvalidTypeMapping, SchemaDiagnosticSeverity.Error)]
+  [InlineData(SchemaDiagnosticCodes.MappedRoot, SchemaDiagnosticSeverity.Error)]
+  [InlineData(SchemaDiagnosticCodes.ConverterWithoutMapping, SchemaDiagnosticSeverity.Warning)]
   public void EachInvalidCase_RaisesItsCode(string code, SchemaDiagnosticSeverity severity)
   {
     var diagnostic = Assert.Single(GenerateInvalid().Diagnostics, d => d.Code == code);
@@ -31,7 +35,7 @@ public sealed partial class JsonSchemaGeneratorTests
 
     // Every document whose closure held an error is withheld; the merely-odd ones still come out.
     Assert.Equal(
-      ["clashing-names.json", "colliding.json", "floating-key.json", "misapplied-decorator.json"],
+      ["clashing-names.json", "colliding.json", "converted.json", "floating-key.json", "misapplied-decorator.json"],
       result.Documents.Select(d => d.FileName));
   }
 
@@ -64,5 +68,56 @@ public sealed partial class JsonSchemaGeneratorTests
       d => d.Code == SchemaDiagnosticCodes.UnmappedType);
 
     Assert.StartsWith("tool : error DNS0002: ", diagnostic.ToCanonicalString("tool"), StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void AConvertedTypeWithoutAMapping_IsAnEmptySchema_NotItsMembers()
+  {
+    var document = GenerateInvalid().Documents.Single(d => d.FileName == "converted.json");
+    var model = (JsonObject)JsonNode.Parse(document.Json)!["$defs"]!["ConvertedWithoutMapping"]!;
+
+    Assert.Equal("{}", Compact(Property(model, "value")));
+    Assert.DoesNotContain("Converted", document.DefinitionNames);
+  }
+
+  [Fact]
+  public void AConfiguredMappingThatMatchesNothing_Warns_AndChangesNothingElse()
+  {
+    // DNS0017 has no fixture: a misspelt name is a configuration problem, not a model one.
+    var options = SchemaGenerationOptions.Default with
+    {
+      TypeMappings = [new TypeMapping("DotNetSchema.Fixtures.Schema.StudentNumbr", "string")],
+    };
+
+    var result = Generate(options, typeof(School));
+
+    var diagnostic = Assert.Single(result.Diagnostics);
+    Assert.Equal(SchemaDiagnosticCodes.TypeMappingUnused, diagnostic.Code);
+    Assert.Equal(SchemaDiagnosticSeverity.Warning, diagnostic.Severity);
+    Assert.Equal(Document(typeof(School)).ToJsonString(), JsonNode.Parse(Assert.Single(result.Documents).Json)!.ToJsonString());
+  }
+
+  [Theory]
+  [InlineData("DotNetSchema.Fixtures.Schema.StudentNumber", "text", null)]
+  [InlineData("DotNetSchema.Fixtures.Schema.StudentNumber", "integer", "^\\d+$")]
+  [InlineData("DotNetSchema.Fixtures.Schema.StudentNumber", "string", "([")]
+  [InlineData(" ", "string", null)]
+  public void AMalformedConfiguredMapping_IsAnError_AndIsIgnored(string name, string type, string? pattern)
+  {
+    var options = SchemaGenerationOptions.Default with
+    {
+      EmitComments = false,
+      TypeMappings = [new TypeMapping(name, type, Pattern: pattern)],
+    };
+
+    var result = Generate(options, typeof(School));
+
+    var diagnostic = Assert.Single(result.Diagnostics);
+    Assert.Equal(SchemaDiagnosticCodes.InvalidTypeMapping, diagnostic.Code);
+    Assert.Equal(SchemaDiagnosticSeverity.Error, diagnostic.Severity);
+
+    // Ignored, so the type's own declaration still stands.
+    var person = (JsonObject)JsonNode.Parse(Assert.Single(result.Documents).Json)!["$defs"]!["Person"]!;
+    Assert.Equal("""{"type":["string","null"],"pattern":"^S\\d{7}$"}""", Compact(Property(person, "studentNumber")));
   }
 }

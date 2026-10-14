@@ -29,10 +29,13 @@ reaches a shell.
 | `--decorators=<patterns>` | yes | `;`-separated attribute patterns (full name, `Ns.*` or `*`) replacing the generator's default decorator list. Given at all, even empty, it replaces the list. |
 | `--decorators-allow=<patterns>` | yes | Patterns added to the decorator list. |
 | `--decorators-deny=<patterns>` | yes | Patterns removed from the decorator list, deny winning. |
+| `--type-mapping=<name>\|<type>\|<format>\|<pattern>` | yes | One `DotNetSchemaType` item: a type's full name and its declared inline schema. Empty fields are absent. Split into at most four parts, so the pattern, last, may contain `\|`. Validated by the generator (`DNS0016`), not here. |
 
 A path containing `;` is not supported: MSBuild splits item lists on it long before the tool sees it. The
 decorator lists are the exception that proves the rule — the targets escape each one so it arrives as one
-line, and the tool does the splitting.
+line, and the tool does the splitting. A type mapping's pattern may contain `;` too: the targets build each
+line with an item transform, whose result MSBuild does not split. Response-file lines are trimmed, so a
+pattern cannot end in whitespace.
 
 ## What it does that is not obvious
 
@@ -73,7 +76,7 @@ DotNetSchema.Tool/
 `MetadataLoadContextFactory`, `SchemaFileWriter` and `ToolArguments` are public so another front end
 (a CLI, a test harness) can drive the same metadata-only load and the same idempotent writes. Treat their
 signatures as API. `ToolArguments` gained `Decorators`, `DecoratorsAllow` and `DecoratorsDeny` (after `EnumStyle`) in the
-release that introduced `x-decorators`.
+release that introduced `x-decorators`, and `TypeMappings` (last) in the one that introduced type mappings.
 
 ## Tests
 

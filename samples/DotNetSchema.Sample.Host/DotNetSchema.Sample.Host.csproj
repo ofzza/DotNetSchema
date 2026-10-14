@@ -31,6 +31,16 @@
     <DotNetSchemaDecoratorsDeny>System.ObsoleteAttribute;System.ComponentModel.DataAnnotations.StringLengthAttribute</DotNetSchemaDecoratorsDeny>
   </PropertyGroup>
 
+  <!--
+    Optional: describe a type inline by a declared schema rather than as an object definition. CountryCode is
+    written as a bare string by its own JsonConverter, which nothing in the export can see - this item is the
+    promise that it writes what is declared here. A DotNetSchemaType item also beats a [DotNetSchemaType] on
+    the type itself (as OrderNumber carries), so a host can correct a library's declaration.
+  -->
+  <ItemGroup>
+    <DotNetSchemaType Include="DotNetSchema.Sample.Models.CountryCode" Type="string" Pattern="^[A-Z]{2}$" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\DotNetSchema.Sample.Models\DotNetSchema.Sample.Models.csproj" />
   </ItemGroup>

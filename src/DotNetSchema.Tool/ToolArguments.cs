@@ -13,6 +13,7 @@ namespace DotNetSchema.Tool;
 /// <param name="Decorators">Attribute patterns replacing the default decorator list, or <see langword="null" /> to keep it.</param>
 /// <param name="DecoratorsAllow">Attribute patterns added to the decorator list.</param>
 /// <param name="DecoratorsDeny">Attribute patterns removed from the decorator list.</param>
+/// <param name="TypeMappings">Types described by a declared inline schema, in configuration order.</param>
 public sealed record ToolArguments(
   IReadOnlyList<string> Scan,
   IReadOnlyList<string> References,
@@ -23,7 +24,8 @@ public sealed record ToolArguments(
   EnumStyle EnumStyle,
   IReadOnlyList<string>? Decorators,
   IReadOnlyList<string> DecoratorsAllow,
-  IReadOnlyList<string> DecoratorsDeny)
+  IReadOnlyList<string> DecoratorsDeny,
+  IReadOnlyList<TypeMapping> TypeMappings)
 {
   /// <summary>
   /// Parses <c>--key=value</c> arguments, expanding any <c>@file</c> into one argument per line.
@@ -36,6 +38,11 @@ public sealed record ToolArguments(
   /// The decorator arguments each carry a <c>;</c>-separated list, and may be repeated; the build passes an
   /// MSBuild property through as one line. <c>--decorators</c> given at all, even empty, replaces the
   /// default list.
+  /// </para>
+  /// <para>
+  /// Each <c>--type-mapping</c> is one <c>DotNetSchemaType</c> item, as <c>name|type|format|pattern</c>. The
+  /// pattern goes last because it is the one field that may itself contain a <c>|</c>; a split into at most
+  /// four parts leaves it whole. Validation is the generator's, which reports a bad one as a diagnostic.
   /// </para>
   /// </remarks>
   public static ToolArguments Parse(IEnumerable<string> arguments)
@@ -50,6 +57,7 @@ public sealed record ToolArguments(
     List<string>? decorators = null;
     List<string> decoratorsAllow = [];
     List<string> decoratorsDeny = [];
+    List<TypeMapping> typeMappings = [];
 
     foreach (var argument in Expand(arguments))
     {
@@ -89,6 +97,9 @@ public sealed record ToolArguments(
         case "--decorators-deny":
           decoratorsDeny.AddRange(Patterns(value));
           break;
+        case "--type-mapping":
+          typeMappings.Add(ParseTypeMapping(value));
+          break;
         default:
           throw new ArgumentException($"Unrecognised argument '{key}'.");
       }
@@ -104,7 +115,8 @@ public sealed record ToolArguments(
       enumStyle,
       decorators,
       decoratorsAllow,
-      decoratorsDeny);
+      decoratorsDeny,
+      typeMappings);
   }
 
   /// <summary>Reads an <see cref="EnumStyle" /> by member name, ignoring case.</summary>
@@ -117,6 +129,14 @@ public sealed record ToolArguments(
       ? Enum.Parse<EnumStyle>(name)
       : throw new ArgumentException(
         $"Unrecognised enum style '{value}'; expected one of {string.Join(", ", Enum.GetNames<EnumStyle>())}.");
+
+  private static TypeMapping ParseTypeMapping(string value)
+  {
+    var parts = value.Split('|', 4);
+    string? Part(int index) => parts.Length > index && parts[index].Length > 0 ? parts[index] : null;
+
+    return new TypeMapping(parts[0].Trim(), Part(1) ?? string.Empty, Part(2), Part(3));
+  }
 
   private static IEnumerable<string> Patterns(string value) =>
     value.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);

@@ -332,8 +332,10 @@ public sealed class DecoratorKeywords(IList<SchemaDiagnostic> diagnostics)
   private static Shape ShapeOf(JsonObject body, SchemaTypeRef reference) => reference.Kind switch
   {
     SchemaTypeKind.Array => Shape.Array,
-    SchemaTypeKind.Scalar when body["type"]?.GetValue<string>() is "integer" or "number" => Shape.Number,
-    SchemaTypeKind.Scalar when body["type"]?.GetValue<string>() == "string" => Shape.String,
+    SchemaTypeKind.Scalar or SchemaTypeKind.Mapped when body["type"]?.GetValue<string>() is "integer" or "number" =>
+      Shape.Number,
+    SchemaTypeKind.Scalar or SchemaTypeKind.Mapped when body["type"]?.GetValue<string>() == "string" =>
+      Shape.String,
     _ => Shape.Other,
   };
 

@@ -30,6 +30,12 @@ public sealed record Person
   /// <summary>Capacity in which the person is attached to the school.</summary>
   public required PersonRole Role { get; init; }
 
+  /// <summary>
+  /// Matriculation number. Optional and nullable: only students have one. Described inline by the
+  /// <c>[DotNetSchemaType]</c> on <see cref="Schema.StudentNumber" />, and widened for null like any scalar.
+  /// </summary>
+  public StudentNumber? StudentNumber { get; init; }
+
   /// <summary>Date of birth.</summary>
   public required DateOnly BornOn { get; init; }
 

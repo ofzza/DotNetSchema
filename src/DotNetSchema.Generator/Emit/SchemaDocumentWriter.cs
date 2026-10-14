@@ -10,14 +10,16 @@ namespace DotNetSchema.Generator.Emit;
 /// <param name="options">The generation options in force.</param>
 /// <param name="names">Definition name per type, from <see cref="DefinitionNameResolver" />.</param>
 /// <param name="diagnostics">Where the classifier reports anything it cannot map.</param>
+/// <param name="mappings">The type mappings in force; see <see cref="TypeClassifier" />.</param>
 public sealed class SchemaDocumentWriter(
   SchemaGenerationOptions options,
   IReadOnlyDictionary<string, string> names,
-  IList<SchemaDiagnostic> diagnostics)
+  IList<SchemaDiagnostic> diagnostics,
+  TypeMappingResolver? mappings = null)
 {
   private const string Dialect = "https://json-schema.org/draft/2020-12/schema";
 
-  private readonly TypeClassifier _classifier = new(options, diagnostics);
+  private readonly TypeClassifier _classifier = new(options, diagnostics, mappings);
   private readonly DecoratorReader _decorators = new(options);
   private readonly DecoratorKeywords _keywords = new(diagnostics);
 
@@ -215,6 +217,9 @@ public sealed class SchemaDocumentWriter(
       case SchemaTypeKind.Binary:
         return new JsonObject { ["type"] = "string", ["contentEncoding"] = "base64" };
 
+      case SchemaTypeKind.Mapped:
+        return Mapped(reference, withComment: true);
+
       case SchemaTypeKind.Model:
         return Reference(reference.Type);
 
@@ -256,6 +261,10 @@ public sealed class SchemaDocumentWriter(
         ["enum"] = new JsonArray([.. EnumFacts.Members(key.Type, options).Select(m => (JsonNode)m.JsonName)]),
       };
     }
+    else if (key.Kind == SchemaTypeKind.Mapped)
+    {
+      map["propertyNames"] = Mapped(key, withComment: false);
+    }
     else if (ScalarTable.Key(key.Type) is { } constraint)
     {
       map["propertyNames"] = constraint;
@@ -263,6 +272,38 @@ public sealed class SchemaDocumentWriter(
 
     map["additionalProperties"] = Schema(reference.Item!);
     return map;
+  }
+
+  /// <summary>
+  /// The schema declared for a mapped type. The comment names the type and the source of the declaration,
+  /// because a reviewer otherwise sees a bare string where a definition was expected and nothing to say why.
+  /// </summary>
+  private JsonObject Mapped(SchemaTypeRef reference, bool withComment)
+  {
+    var mapping = reference.Mapping!;
+    var schema = new JsonObject { ["type"] = mapping.Type };
+
+    if (mapping.Format is { } format)
+    {
+      schema["format"] = format;
+    }
+
+    if (mapping.Pattern is { } pattern)
+    {
+      schema["pattern"] = pattern;
+    }
+
+    if (withComment && options.EmitComments)
+    {
+      var source = mapping.Source == TypeMappingSource.Configuration
+        ? "a DotNetSchemaType item"
+        : "[DotNetSchemaType]";
+      schema["$comment"] =
+        $"{MetadataFacts.TypeName(reference.Type)}, described inline as declared by {source} rather than " +
+        "by its shape. Nothing checks that it is serialised this way.";
+    }
+
+    return schema;
   }
 
   private JsonObject Reference(Type type) =>

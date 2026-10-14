@@ -15,6 +15,12 @@ public sealed record Book
   /// <summary>Stable identity of the title.</summary>
   public required Guid Id { get; init; }
 
+  /// <summary>
+  /// The catalogue's own identifier for the title. A construction of a generic type, described inline by the
+  /// <c>[DotNetSchemaType]</c> on its definition.
+  /// </summary>
+  public required CatalogueId<Book> CatalogueId { get; init; }
+
   /// <summary>Which title this is.</summary>
   [SampleDecorator(typeof(SampleDecoratorAttribute.Nested), SampleShade.Red | SampleShade.Blue, "boxed")]
   public required BookName Name { get; init; }

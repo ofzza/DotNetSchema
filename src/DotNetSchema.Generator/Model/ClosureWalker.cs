@@ -15,9 +15,13 @@ namespace DotNetSchema.Generator.Model;
 /// </remarks>
 /// <param name="options">The generation options in force.</param>
 /// <param name="diagnostics">Where to report types that cannot be defined.</param>
-public sealed class ClosureWalker(SchemaGenerationOptions options, IList<SchemaDiagnostic> diagnostics)
+/// <param name="mappings">The type mappings in force; see <see cref="TypeClassifier" />.</param>
+public sealed class ClosureWalker(
+  SchemaGenerationOptions options,
+  IList<SchemaDiagnostic> diagnostics,
+  TypeMappingResolver? mappings = null)
 {
-  private readonly TypeClassifier _classifier = new(options, diagnostics);
+  private readonly TypeClassifier _classifier = new(options, diagnostics, mappings);
   private readonly SortedSet<string> _unannotated = new(StringComparer.Ordinal);
 
   /// <summary>

@@ -47,6 +47,7 @@ DotNetSchema.Generator/
   JsonSchemaGenerator.cs         attribute scan, grouping by document, ordering
   SchemaGenerationOptions.cs     every choice, with its default
   SchemaGenerationResult.cs      documents, diagnostics, source locations
+  TypeMapping.cs                 a configured type mapping
   Reflection/                    the metadata-only layer
     MetadataFacts.cs             the firewall described above
     NullableFlagsReader.cs       decodes [Nullable] / [NullableContext] by hand
@@ -56,7 +57,8 @@ DotNetSchema.Generator/
     DecoratorReader.cs           selected attributes, rendered for x-decorators
   Model/                         C# types to schema shapes
     ScalarTable.cs               the mapping table, in one place
-    TypeClassifier.cs            scalar / enum / model / array / map / binary / unmapped
+    TypeClassifier.cs            mapped / scalar / enum / model / array / map / binary / opaque / unmapped
+    TypeMappingResolver.cs       configured and [DotNetSchemaType] mappings, validated and tracked
     ClosureWalker.cs             what a document has to define
     DefinitionNameResolver.cs    $defs names, and collisions
     SchemaTypeRef.cs
@@ -88,7 +90,9 @@ keyword names suggest. Three rows marked ⚠ are places where the obvious answer
 | ⚠ `TimeSpan` | a pattern. Written as `[-][d.]hh:mm:ss[.fffffff]`, which is **not** an ISO-8601 duration, so `format: "duration"` would be false. |
 | ⚠ `DateTime` | `{"type":"string","format":"date-time"}` — true only when `Kind` is not `Unspecified`, which the type does not guarantee. Noted in a `$comment`. |
 | `DateTimeOffset` | `{"type":"string","format":"date-time"}` |
+| a mapped type | its declared `{"type":…,"format":…,"pattern":…}`, inline — see [Type mappings](#type-mappings) |
 | model | `{"$ref":"#/$defs/T"}`, always |
+| model written by a `[JsonConverter]`, unmapped | `{}` — `DNS0019` |
 | enum | `{"$ref":"#/$defs/E"}`; the definition's shape is set by `EnumStyle` — see [Enums](#enums-have-two-shapes-and-they-disagree) |
 | `IReadOnlyList<T>` and friends, `T[]` | `{"type":"array","items":…}` |
 | `byte[]`, `Memory<byte>` | `{"type":"string","contentEncoding":"base64"}` |
@@ -211,12 +215,48 @@ an argument naming a type from an assembly the load cannot resolve — raise `DN
 decorators are left out.
 
 These keywords describe validation the model *declares*. System.Text.Json enforces none of it — it writes
-a `[Range(1, 10)]` property holding `42` without complaint — so they are the one place the schema says more
-than "what System.Text.Json writes". Deny the attribute if a schema consumer must accept everything the
+a `[Range(1, 10)]` property holding `42` without complaint — so they are one of the two places the schema
+says more than "what System.Text.Json writes" (the other is [type mappings](#type-mappings)). Deny the attribute if a schema consumer must accept everything the
 serialiser can produce.
 
 `x-decorators` is a vendor keyword: Draft 2020-12 treats it as an annotation, but a strict validator (Ajv's
 default strict mode) rejects the schema unless it is registered.
+
+## Type mappings
+
+A type can be described by a declared inline schema instead of by its shape: a `SchemaGenerationOptions.TypeMappings`
+entry (the build's `DotNetSchemaType` item) or `[DotNetSchemaType]` on the type. The package README,
+["Custom type mappings"](../DotNetSchema/README.md#custom-type-mappings), is the user-facing account; the rules
+the generator implements are:
+
+- **Precedence:** configuration, then the attribute, then `ScalarTable`, then classification by shape. The
+  mapping check is the first thing `TypeClassifier.Classify` does, so it beats enums and collection-shaped
+  types too.
+- **Lookup** is by `FullName`, or by the generic *definition's* `FullName` for a constructed generic — one
+  mapping covers every construction. The attribute is read from the definition through `CustomAttributeData`,
+  by name; the attribute type's name is taken from `typeof(DotNetSchemaTypeAttribute).FullName`, like the
+  marker's.
+- **Emission:** `{"type":…,"format":…,"pattern":…}` in that order, plus a `$comment` naming the type and the
+  source of the declaration. Never a definition, never a `$ref`; the type's members are not walked and its
+  model-level `x-decorators` are not emitted. Nullable widens it through the `type` array like an inline
+  scalar. Property decorators apply to it as to a scalar of the declared type.
+- **Dictionary keys:** a `string` mapping becomes `propertyNames`. Any other mapping speaks only for the value
+  form, so the key falls through to what it would have been — fine for an enum or a primitive, `DNS0004` for
+  anything else.
+- **Validation** (`DNS0016`, error): `Type` one of `string`, `number`, `integer`, `boolean` (case-insensitive,
+  emitted lower-case); `Pattern` only on `string`, and it must compile as a .NET `Regex`. A malformed mapping
+  is ignored. A bad configured one is reported once for the run; a bad attribute every time its type is
+  reached, so each document depending on it is withheld.
+- **`DNS0017`:** one `TypeMappingResolver` serves a whole `Generate` call, recording which configured names
+  were looked up, so a configured mapping no document reached can be reported at the end.
+- **`DNS0018`:** a root that is also mapped withholds its document.
+- **`DNS0019`:** a position about to classify as a model, governed by a converter — named on the property, or
+  by `[JsonConverter]` on the type (its generic definition, for a construction) — and not mapped, becomes
+  `SchemaTypeKind.Opaque`, emitted as `{}`, and its members are not walked.
+
+This is the second deliberate step beyond "the schema describes what System.Text.Json writes", after the
+[decorator keywords](#decorators): the generator cannot see a converter's output, so a mapping is the
+consumer's assertion about it, taken on trust.
 
 ## Determinism
 
@@ -229,6 +269,8 @@ Output is byte-stable, because the goldens depend on it and so will the TypeScri
 - Enum members by ascending value, then `MetadataToken`, matching `Enum.GetNames`.
 - `x-decorators` entries by name, then rendered text; mapped keywords in one fixed order; a `Type` argument
   by `MetadataFacts.TypeName`, never `FullName`, which embeds a different core assembly on each path.
+- A type mapping's keywords as `type`, `format`, `pattern`, `$comment`; the comment names the type by
+  `MetadataFacts.TypeName` for the same reason.
 - `JsonWriterOptions.NewLine` pinned to `"\n"`. It defaults to `Environment.NewLine`, so leaving it unset
   would emit CRLF on Windows and put a golden out of reach.
 - `JavaScriptEncoder.UnsafeRelaxedJsonEscaping`, so the `TimeSpan` pattern's `\d+` stays readable rather

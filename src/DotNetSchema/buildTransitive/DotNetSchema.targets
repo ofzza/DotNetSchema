@@ -149,6 +149,14 @@
                              Condition="'$(DotNetSchemaDecoratorsAllow)' != ''" />
       <_DotNetSchemaArgument Include="--decorators-deny=$([MSBuild]::Escape('$(DotNetSchemaDecoratorsDeny)'))"
                              Condition="'$(DotNetSchemaDecoratorsDeny)' != ''" />
+      <!-- One line per DotNetSchemaType item, its fields joined by '|' with the free-text pattern last, so the
+           tool can split each line into at most four parts and leave a '|' inside the pattern whole. Items
+           rather than a property, so a mapping needs no escaping and a shared Directory.Build.props can add
+           them while a project takes one back out with Remove. A transform keeps each pattern intact: its
+           result is not split on ';' or expanded as a glob the way a literal Include would be. Nothing in
+           .props declares the item: items are read here, when the target runs, so both delivery paths see
+           whatever the csproj body added. -->
+      <_DotNetSchemaArgument Include="@(DotNetSchemaType->'--type-mapping=%(Identity)|%(Type)|%(Format)|%(Pattern)')" />
       <_DotNetSchemaArgument Include="@(_DotNetSchemaScan->'--scan=%(FullPath)')" />
       <_DotNetSchemaArgument Include="@(_DotNetSchemaResolve->'--reference=%(FullPath)')" />
     </ItemGroup>

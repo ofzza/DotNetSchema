@@ -23,6 +23,18 @@ public enum SchemaTypeKind
 
   /// <summary>Something with no JSON Schema representation.</summary>
   Unmapped,
+
+  /// <summary>
+  /// A type described by a declared inline schema — a configured mapping or <c>[DotNetSchemaType]</c> —
+  /// rather than by its shape. Never a definition, never a <c>$ref</c>.
+  /// </summary>
+  Mapped,
+
+  /// <summary>
+  /// A model position a <c>[JsonConverter]</c> governs with no mapping to say what it writes: an empty
+  /// schema, because anything narrower would be a guess.
+  /// </summary>
+  Opaque,
 }
 
 /// <summary>
@@ -34,10 +46,12 @@ public enum SchemaTypeKind
 /// <param name="Key">For a <see cref="SchemaTypeKind.Map" />, what constrains its property names.</param>
 /// <param name="Item">For an array its element, for a map its value.</param>
 /// <param name="AsString">For an <see cref="SchemaTypeKind.Enum" />, whether it serialises as a name.</param>
+/// <param name="Mapping">For a <see cref="SchemaTypeKind.Mapped" /> type, the schema declared for it.</param>
 public sealed record SchemaTypeRef(
   SchemaTypeKind Kind,
   Type Type,
   bool IsNullable,
   SchemaTypeRef? Key = null,
   SchemaTypeRef? Item = null,
-  bool AsString = false);
+  bool AsString = false,
+  ResolvedTypeMapping? Mapping = null);

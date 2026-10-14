@@ -33,7 +33,7 @@ Full documentation: [src/DotNetSchema/README.md](src/DotNetSchema/README.md).
 | `src/DotNetSchema.Generator` | The schema engine |
 | `src/DotNetSchema.Tool` | The command-line shell the build runs |
 | `tests/` | Generator tests and the fixture models they run over |
-| `samples/` | A model library + host pair showing the opt-in and a custom output path |
+| `samples/` | A model library + host pair showing the opt-in, a custom output path and type mappings |
 | `scripts/pack.sh` | Packs into `artifacts/packages` |
 | `PUBLISH.md` | Release checklists and the steps to publish to nuget.org |
 | `icon.png` | The package icon |

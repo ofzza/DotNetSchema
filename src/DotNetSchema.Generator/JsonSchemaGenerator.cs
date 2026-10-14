@@ -49,6 +49,10 @@ public sealed class JsonSchemaGenerator : IJsonSchemaGenerator
   {
     var documents = new List<SchemaDocument>();
 
+    // One resolver for the whole run: a configured mapping is unused only if no document reached its type.
+    var mappings = new TypeMappingResolver(options);
+    diagnostics.AddRange(mappings.ConfigurationDiagnostics);
+
     var files = roots
       .GroupBy(root => root.FileName, StringComparer.Ordinal)
       .OrderBy(group => group.Key, StringComparer.Ordinal);
@@ -64,7 +68,17 @@ public sealed class JsonSchemaGenerator : IJsonSchemaGenerator
         .OrderBy(type => type.FullName, StringComparer.Ordinal)
         .ToList();
 
-      var walker = new ClosureWalker(options, local);
+      foreach (var root in ordered.Where(root => mappings.Resolve(root, local) is not null))
+      {
+        local.Add(new SchemaDiagnostic(
+          SchemaDiagnosticSeverity.Error,
+          SchemaDiagnosticCodes.MappedRoot,
+          $"Type '{root.FullName}' is marked for export but also has a type mapping, which describes it " +
+          "inline wherever it is used. It cannot be both; remove the mark or the mapping.",
+          root.FullName));
+      }
+
+      var walker = new ClosureWalker(options, local, mappings);
       var closure = walker.Walk(ordered);
 
       foreach (var assembly in walker.UnannotatedAssemblies)
@@ -78,7 +92,7 @@ public sealed class JsonSchemaGenerator : IJsonSchemaGenerator
       }
 
       var names = DefinitionNameResolver.Resolve(closure, local);
-      var document = new SchemaDocumentWriter(options, names, local).Write(file.Key, closure, ordered);
+      var document = new SchemaDocumentWriter(options, names, local, mappings).Write(file.Key, closure, ordered);
 
       diagnostics.AddRange(local);
 
@@ -87,6 +101,8 @@ public sealed class JsonSchemaGenerator : IJsonSchemaGenerator
         documents.Add(document);
       }
     }
+
+    diagnostics.AddRange(mappings.Unused());
 
     return new SchemaGenerationResult(documents, Ordered(diagnostics));
   }

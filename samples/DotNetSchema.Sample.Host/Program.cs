@@ -1,4 +1,4 @@
 using DotNetSchema.Sample.Models;
 
-var customer = new Customer(Guid.NewGuid(), "Ada", null, new Address("1 Main St", "Zagreb", "10000", "HR"), []);
+var customer = new Customer(Guid.NewGuid(), "Ada", null, new Address("1 Main St", "Zagreb", "10000", new CountryCode("HR")), []);
 Console.WriteLine(customer);
