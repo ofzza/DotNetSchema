@@ -10,7 +10,7 @@
   <!--
     A model library only needs the attribute. Outside this repository that is just:
 
-      <PackageReference Include="DotNetSchema" Version="0.1.0-alpha.3" />
+      <PackageReference Include="DotNetSchema" Version="0.1.0-alpha.4" />
 
     from https://www.nuget.org/packages/DotNetSchema/
 
