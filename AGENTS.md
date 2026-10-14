@@ -46,7 +46,8 @@ Toolchain last verified against: .NET SDK 10.0.112, xunit.v3 3.2.2, Microsoft.NE
 
 ## Branching
 
-- **`develop` is the work-in-progress trunk.** Create every feature, fix or dependency branch from `develop`, and open every pull request against `develop`.
+- **`develop` is the work-in-progress trunk, and most work is committed to it directly.** Fixes, small features, documentation and dependency updates go straight onto `develop` — no branch, no pull request.
+- **A separate feature branch only when asked.** Create one only when the user explicitly asks for it, or when the work is a large feature *and* the user has explicitly confirmed they want it on its own branch — ask first rather than assuming. Such a branch is created from `develop`, and its pull request targets `develop`.
 - **`master` holds only the latest stable release.** It is never committed to directly and never receives feature pull requests — it is only updated by merging `develop` into it when a stable version is released.
 - Pull request titles follow `.github/pull_request_template.md`: `Issue #NN, Copied issue title`, with Changes / Testing / Impact sections.
 
