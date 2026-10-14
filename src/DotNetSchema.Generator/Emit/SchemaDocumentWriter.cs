@@ -96,8 +96,9 @@ public sealed class SchemaDocumentWriter(
 
       properties[member.JsonName] = Schema(reference);
 
-      // Driven by the C# required modifier alone. Nullability is a separate question: a required member
-      // may still accept null, and an optional one may not.
+      // Driven by the C# required modifier or [JsonRequired] alone — the two markers System.Text.Json
+      // enforces on read. Nullability is a separate question: a required member may still accept null, and
+      // an optional one may not.
       if (member.IsRequired)
       {
         required.Add(member.JsonName);

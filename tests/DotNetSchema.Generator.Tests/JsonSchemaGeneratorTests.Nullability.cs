@@ -1,12 +1,15 @@
-﻿using System.Text.Json.Nodes;
+﻿using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using DotNetSchema.Fixtures.Schema;
 
 namespace DotNetSchema.Generator.Tests;
 
 /// <remarks>
-/// Whether a property is <c>required</c> and whether it accepts <c>null</c> are separate questions, and the
-/// fixtures answer them in all four combinations — for scalars, arrays, maps, enums and model references
-/// alike — so that neither can quietly be derived from the other. Every property of the school graph not
+/// Whether a property is <c>required</c> (the C# modifier or <c>[JsonRequired]</c>) and whether it accepts
+/// <c>null</c> are separate questions, and the fixtures answer them in all four combinations — for scalars,
+/// arrays, maps, enums and model references alike — so that neither can quietly be derived from the other. Every property of the school graph not
 /// listed below is required and never null. The three nullable scalar twins are checked by rule instead of by
 /// list, because they are laid out by rule.
 /// </remarks>
@@ -158,6 +161,18 @@ public sealed partial class JsonSchemaGeneratorTests
     Assert.Equal(
       ["id", "givenName", "familyName", "role", "bornOn", "isActive", "gradePointAverage", "classes"],
       Required(person));
+  }
+
+  [Fact]
+  public void AJsonRequiredProperty_IsRequired_WithoutTheRequiredModifier()
+  {
+    // Book.Isbn is the fixture's one [JsonRequired] property; checking it carries no modifier keeps the test
+    // from passing on the modifier alone should the fixture ever drift back to it.
+    var isbn = typeof(Book).GetProperty(nameof(Book.Isbn))!;
+    Assert.NotNull(isbn.GetCustomAttribute<JsonRequiredAttribute>());
+    Assert.Null(isbn.GetCustomAttribute<RequiredMemberAttribute>());
+
+    Assert.Contains("isbn", Required(Definition("Book", typeof(School))));
   }
 
   [Fact]

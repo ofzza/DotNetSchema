@@ -1,4 +1,5 @@
-﻿using DotNetSchema.Fixtures.Schema.Enums;
+﻿using System.Text.Json.Serialization;
+using DotNetSchema.Fixtures.Schema.Enums;
 
 namespace DotNetSchema.Fixtures.Schema;
 
@@ -16,8 +17,10 @@ public sealed record Book
 
   /// <summary>
   /// ISBN-13, formatted with separators. Required but nullable: <c>null</c> for a title that predates ISBNs.
+  /// Required through <c>[JsonRequired]</c> rather than the C# modifier, so the fixtures cover both markers.
   /// </summary>
-  public required string? Isbn { get; init; }
+  [JsonRequired]
+  public string? Isbn { get; init; }
 
   /// <summary>Edition number.</summary>
   public required byte Edition { get; init; }

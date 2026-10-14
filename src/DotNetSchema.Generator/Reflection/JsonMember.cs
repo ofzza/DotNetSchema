@@ -7,7 +7,7 @@ namespace DotNetSchema.Generator.Reflection;
 /// <param name="JsonName">The name it serialises under, after the naming policy and any override.</param>
 /// <param name="Order">Its <c>[JsonPropertyOrder]</c>, or zero.</param>
 /// <param name="MetadataToken">Declaration order, and the only ordering key that survives a metadata-only read.</param>
-/// <param name="IsRequired">Whether the property carries the C# <c>required</c> modifier.</param>
+/// <param name="IsRequired">Whether the property carries the C# <c>required</c> modifier or <c>[JsonRequired]</c>.</param>
 /// <param name="Nullability">Nullability of its type, and of everything nested in it.</param>
 /// <param name="ConverterTypeFullName">Full name of a converter named on the property, if any.</param>
 public sealed record JsonMember(
