@@ -15,7 +15,7 @@ public sealed record Order(Guid Id, IReadOnlyList<OrderLine> Lines);
 
 ```xml
 <!-- wherever models live -->
-<PackageReference Include="DotNetSchema" Version="0.1.0-alpha.2" />
+<PackageReference Include="DotNetSchema" Version="0.1.0-alpha.3" />
 
 <!-- in the host project that should produce the documents -->
 <DotNetSchemaGenerate>true</DotNetSchemaGenerate>

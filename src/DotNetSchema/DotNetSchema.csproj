@@ -14,7 +14,7 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <PackageId>DotNetSchema</PackageId>
-    <Version>0.1.0-alpha.2</Version>
+    <Version>0.1.0-alpha.3</Version>
     <Authors>ofzza</Authors>
     <Description>Exports [DotNetSchema]-marked data models to JSON Schema (Draft 2020-12) on build.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
