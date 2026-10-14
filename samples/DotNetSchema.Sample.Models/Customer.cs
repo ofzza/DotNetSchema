@@ -17,4 +17,12 @@ public sealed record Customer(
   IReadOnlyList<Order> Orders);
 
 /// <summary>Not marked: carried into the document because <see cref="Customer" /> reaches it.</summary>
-public sealed record Address(string Street, string City, string PostalCode, CountryCode Country);
+/// <remarks>
+/// A postal code is a plain <c>string</c> to C#; <c>[DotNetSchemaFormat]</c> tells a schema reader what kind
+/// of string, for this one property, without a type of its own.
+/// </remarks>
+public sealed record Address(
+  string Street,
+  string City,
+  [DotNetSchemaFormat("postal-code")] string PostalCode,
+  CountryCode Country);

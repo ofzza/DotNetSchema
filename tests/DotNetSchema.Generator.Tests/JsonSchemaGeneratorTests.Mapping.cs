@@ -216,4 +216,39 @@ public sealed partial class JsonSchemaGeneratorTests
       Compact(Property(Definition("Person", Uncommented, typeof(School)), "grades")["propertyNames"]),
       Compact(Property(person, "grades")["propertyNames"]));
   }
+
+  // [DotNetSchemaFormat]: a format and/or pattern declared on one property, never changing its type.
+
+  [Theory]
+  [InlineData("Book", "isbn", """{"type":["string","null"],"format":"isbn","pattern":"^978-\\d-\\d{3}-\\d{5}-\\d$"}""")]
+  [InlineData("Book", "price", """{"type":"number","format":"decimal"}""")]
+  [InlineData("Department", "costCentre", """{"type":"string","pattern":"^(?:CC-\\d{3})?$"}""")]
+  public void APropertyFormat_AddsItsKeywords_BesideTheTypeItLeavesAlone(string definition, string property, string expected)
+  {
+    // Isbn is nullable: the keywords are type-conditional, so they sit beside the type array, not in an anyOf.
+    var schema = Property(Definition(definition, Uncommented, typeof(School)), property);
+    schema.Remove("title");
+    schema.Remove("description");
+    schema.Remove("x-decorators");
+
+    Assert.Equal(expected, Compact(schema));
+  }
+
+  [Fact]
+  public void APropertyFormat_ReplacesTheFormatTheTypeHasOfItsOwn()
+  {
+    var anchor = Property(Definition("Bookmark", typeof(DotNetSchema.Fixtures.Schema.Decorators.Bookmark)), "anchor");
+
+    Assert.Equal("""{"type":"string","format":"uuid-v7"}""", Compact(anchor));
+  }
+
+  [Fact]
+  public void APropertyFormatOnACollection_ConstrainsItsElements_AndIsReadFromAPositionalParameter()
+  {
+    // Written without a property: target, so C# put it on the primary-constructor parameter.
+    var tags = Property(Definition("Bookmark", typeof(DotNetSchema.Fixtures.Schema.Decorators.Bookmark)), "tags");
+
+    Assert.Equal("""{"type":"string","pattern":"^[a-z][a-z0-9-]*$"}""", Compact(tags["items"]));
+    Assert.False(tags.ContainsKey("pattern"));
+  }
 }

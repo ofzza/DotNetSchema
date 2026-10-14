@@ -22,6 +22,7 @@ public sealed class SchemaDocumentWriter(
   private readonly TypeClassifier _classifier = new(options, diagnostics, mappings);
   private readonly DecoratorReader _decorators = new(options);
   private readonly DecoratorKeywords _keywords = new(diagnostics);
+  private readonly PropertyFormat _formats = new(diagnostics);
 
   /// <summary>Writes one document.</summary>
   /// <param name="fileName">Its file name, which also supplies the <c>$id</c> and <c>title</c>.</param>
@@ -102,6 +103,10 @@ public sealed class SchemaDocumentWriter(
       var owner = type.FullName ?? type.Name;
       var decorators = Decorators(() => _decorators.Read(member.Property), owner, member.Property.Name);
       var body = Body(reference);
+
+      // Before the DataAnnotations keywords, so the property's explicit declaration is the one a clashing
+      // [EmailAddress] or [RegularExpression] gives way to, not the other way round.
+      _formats.Apply(body, reference, member.Property, owner);
       _keywords.Constrain(body, reference, decorators, owner, member.Property.Name);
       var schema = Nullable(body, reference.IsNullable);
       DecoratorKeywords.Annotate(schema, reference, decorators);

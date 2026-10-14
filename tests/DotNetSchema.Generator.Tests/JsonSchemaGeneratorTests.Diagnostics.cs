@@ -19,11 +19,16 @@ public sealed partial class JsonSchemaGeneratorTests
   [InlineData(SchemaDiagnosticCodes.InvalidTypeMapping, SchemaDiagnosticSeverity.Error)]
   [InlineData(SchemaDiagnosticCodes.MappedRoot, SchemaDiagnosticSeverity.Error)]
   [InlineData(SchemaDiagnosticCodes.ConverterWithoutMapping, SchemaDiagnosticSeverity.Warning)]
+  [InlineData(SchemaDiagnosticCodes.InvalidPropertyFormat, SchemaDiagnosticSeverity.Error)]
+  [InlineData(SchemaDiagnosticCodes.PropertyFormatNotApplicable, SchemaDiagnosticSeverity.Warning)]
   public void EachInvalidCase_RaisesItsCode(string code, SchemaDiagnosticSeverity severity)
   {
-    var diagnostic = Assert.Single(GenerateInvalid().Diagnostics, d => d.Code == code);
+    // Some codes have more than one case (DNS0021 is raised for a model and for a misplaced pattern), but a
+    // code never changes severity between them.
+    var diagnostics = GenerateInvalid().Diagnostics.Where(d => d.Code == code).ToList();
 
-    Assert.Equal(severity, diagnostic.Severity);
+    Assert.NotEmpty(diagnostics);
+    Assert.All(diagnostics, d => Assert.Equal(severity, d.Severity));
   }
 
   [Fact]
@@ -35,7 +40,10 @@ public sealed partial class JsonSchemaGeneratorTests
 
     // Every document whose closure held an error is withheld; the merely-odd ones still come out.
     Assert.Equal(
-      ["clashing-names.json", "colliding.json", "converted.json", "floating-key.json", "misapplied-decorator.json"],
+      [
+        "clashing-names.json", "colliding.json", "converted.json", "floating-key.json", "misapplied-decorator.json",
+        "misapplied-format.json",
+      ],
       result.Documents.Select(d => d.FileName));
   }
 
@@ -119,5 +127,49 @@ public sealed partial class JsonSchemaGeneratorTests
     // Ignored, so the type's own declaration still stands.
     var person = (JsonObject)JsonNode.Parse(Assert.Single(result.Documents).Json)!["$defs"]!["Person"]!;
     Assert.Equal("""{"type":["string","null"],"pattern":"^S\\d{7}$"}""", Compact(Property(person, "studentNumber")));
+  }
+
+  [Fact]
+  public void AMalformedPropertyFormat_IsAnError_AndIsIgnored()
+  {
+    var diagnostic = Assert.Single(GenerateInvalid().Diagnostics, d => d.Code == SchemaDiagnosticCodes.InvalidPropertyFormat);
+
+    Assert.Equal("Code", diagnostic.MemberName);
+    Assert.Contains("not a valid regular expression", diagnostic.Message, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void AMisappliedPropertyFormat_Warns_AndContributesNothing()
+  {
+    var result = GenerateInvalid();
+    var document = result.Documents.Single(d => d.FileName == "misapplied-format.json");
+    var model = (JsonObject)JsonNode.Parse(document.Json)!["$defs"]!["MisappliedFormat"]!;
+
+    Assert.Equal(
+      ["Count", "Target"],
+      result.Diagnostics
+        .Where(d => d.Code == SchemaDiagnosticCodes.PropertyFormatNotApplicable)
+        .Select(d => d.MemberName)
+        .Order(StringComparer.Ordinal));
+
+    // Nothing half-applied: a pattern that cannot go on a number takes the attribute's format with it too.
+    Assert.Equal("""{"$ref":"#/$defs/FormatTarget"}""", Compact(Property(model, "target")));
+    var count = Property(model, "count");
+    Assert.False(count.ContainsKey("format"));
+    Assert.False(count.ContainsKey("pattern"));
+  }
+
+  [Fact]
+  public void APropertyFormat_BeatsAClashingDataAnnotationsFormat()
+  {
+    var result = GenerateInvalid();
+    var document = result.Documents.Single(d => d.FileName == "misapplied-format.json");
+    var model = (JsonObject)JsonNode.Parse(document.Json)!["$defs"]!["MisappliedFormat"]!;
+
+    // [EmailAddress] gives way, as it does to a Guid's own format: the explicit declaration is kept.
+    Assert.Equal("""{"type":"string","format":"idn-email"}""", Compact(WithoutDecorators(Property(model, "contact"))));
+    Assert.Contains(
+      result.Diagnostics,
+      d => d.Code == SchemaDiagnosticCodes.DecoratorNotApplicable && d.MemberName == "Contact");
   }
 }

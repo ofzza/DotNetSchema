@@ -23,8 +23,12 @@ public sealed record Address
   [SampleDecorator(typeof(int[]), SampleShade.None, new[] { "a", "b" })]
   public string? PostalCode { get; init; }
 
-  /// <summary>ISO 3166-1 alpha-2 country code.</summary>
+  /// <summary>
+  /// ISO 3166-1 alpha-2 country code. The format comes from <c>[DotNetSchemaFormat]</c> and the pattern from
+  /// <c>[RegularExpression]</c>: the two combine when they do not overlap.
+  /// </summary>
   [RegularExpression("[A-Z]{2}")]
+  [DotNetSchemaFormat("iso3166-1-alpha-2")]
   [SampleDecorator(new int[0], new string[0], new Type[0], new object[0])]
   public required string CountryCode { get; init; }
 

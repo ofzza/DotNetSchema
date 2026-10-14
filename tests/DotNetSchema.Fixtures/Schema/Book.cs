@@ -28,8 +28,10 @@ public sealed record Book
   /// <summary>
   /// ISBN-13, formatted with separators. Required but nullable: <c>null</c> for a title that predates ISBNs.
   /// Required through <c>[JsonRequired]</c> rather than the C# modifier, so the fixtures cover both markers.
+  /// Its <c>[DotNetSchemaFormat]</c> gives a plain string a format and a pattern, beside a null.
   /// </summary>
   [JsonRequired]
+  [DotNetSchemaFormat("isbn", Pattern = @"^978-\d-\d{3}-\d{5}-\d$")]
   [Display(Name = "ISBN-13", Description = "ISBN-13, formatted with separators.")]
   [SampleDecorator(typeof(IReadOnlyDictionary<string, Book>), SampleShade.Green, 42)]
   public string? Isbn { get; init; }
@@ -42,7 +44,8 @@ public sealed record Book
   [Range(typeof(ushort), "1", "5000")]
   public required ushort PageCount { get; init; }
 
-  /// <summary>List price.</summary>
+  /// <summary>List price. A <c>[DotNetSchemaFormat]</c> on a number: a format, which needs no string.</summary>
+  [DotNetSchemaFormat("decimal")]
   public required decimal Price { get; init; }
 
   /// <summary>Publication date.</summary>

@@ -19,14 +19,20 @@ namespace DotNetSchema.Fixtures.Schema.Decorators;
 /// and nullable: <c>required</c> follows the C# modifier and <c>[JsonRequired]</c> alone.
 /// </param>
 /// <param name="Note">Deprecated and described, both through attributes.</param>
-/// <param name="Tags">Tagged on the parameter, on the property, and identically on both (listed once).</param>
+/// <param name="Tags">
+/// Tagged on the parameter, on the property, and identically on both (listed once). Its
+/// <c>[DotNetSchemaFormat]</c>, on the parameter, constrains the elements rather than the array.
+/// </param>
+/// <param name="Anchor">A <c>[DotNetSchemaFormat]</c> replacing the <c>uuid</c> format a <c>Guid</c> has of its own.</param>
 public sealed record Bookmark(
   [property: Url] string Href,
   [Range(1, 10)] int Rank,
   [property: Required] string? Label,
   [property: Obsolete("Superseded by Label.")][property: Description("A free-form note.")] string? Note,
   [SampleTag("parameter")][property: SampleTag("property")][SampleTag("both")][property: SampleTag("both")]
-  IReadOnlyList<string> Tags)
+  [DotNetSchemaFormat(Pattern = "^[a-z][a-z0-9-]*$")]
+  IReadOnlyList<string> Tags,
+  [DotNetSchemaFormat("uuid-v7")] Guid Anchor)
 {
   /// <summary>
   /// Not <c>required</c> in C#, but <c>[JsonRequired]</c>: System.Text.Json refuses a payload without it,

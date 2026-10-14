@@ -140,9 +140,10 @@ cross-document `$ref`s, so a file can be handed to a code generator on its own.
 camelCase; `[JsonPropertyName]`, `[JsonIgnore]`, `[JsonPropertyOrder]` and `[JsonRequired]` are honoured;
 and where the serialiser's output does not match the obvious JSON Schema keyword, the document says what
 is true rather than what is tidy. See [the generator's README](https://github.com/ofzza/DotNetSchema/blob/master/src/DotNetSchema.Generator/README.md)
-for the full mapping table and the three places that bites. There are two deliberate exceptions: the
-keywords mapped from validation attributes, described [below](#attributes-x-decorators), and
-[custom type mappings](#custom-type-mappings), where you state what your serialiser writes.
+for the full mapping table and the three places that bites. There are three deliberate exceptions: the
+keywords mapped from validation attributes, described [below](#attributes-x-decorators),
+[custom type mappings](#custom-type-mappings), where you state what your serialiser writes, and
+[property formats](#property-formats), where you state what a property's values look like.
 
 ### Attributes: `x-decorators`
 
@@ -258,9 +259,20 @@ There are two ways to declare a mapping.
 **On the type**, when it is yours — keeping the declaration next to the converter it describes:
 
 ```csharp
+// A strongly-typed identifier written as its bare GUID: a string in the "uuid" format.
+[DotNetSchemaType("string", Format = "uuid")]
+[JsonConverter(typeof(OrderIdConverter))]
+public readonly record struct OrderId(Guid Value);
+
+// A number written as a code, "S" and seven digits: a string matching a pattern.
 [DotNetSchemaType("string", Pattern = @"^S\d{7}$")]
 [JsonConverter(typeof(StudentNumberConverter))]
 public readonly record struct StudentNumber(int Value);
+```
+
+```json
+"orderId":       { "type": "string", "format": "uuid" },
+"studentNumber": { "type": "string", "pattern": "^S\\d{7}$" }
 ```
 
 **In the exporting project**, for any type — including one from a library you do not control, and including
@@ -326,6 +338,60 @@ That fits the common case, and works best when you keep it that way:
 leaves no trace in the assembly, so a type relying on one is described by its members, without a warning —
 map it.
 
+## Property formats
+
+A type mapping describes a type everywhere it appears. Often the type is fine — a `string` is a string — and
+what is missing is what kind of string *this property* holds. `[DotNetSchemaFormat]` on the property adds a
+`format`, a `pattern`, or both, without changing its `type`:
+
+```csharp
+public sealed record Book
+{
+  [DotNetSchemaFormat("isbn", Pattern = @"^978-\d-\d{3}-\d{5}-\d$")]
+  public string? Isbn { get; init; }
+
+  [DotNetSchemaFormat(Pattern = @"^[A-Z]{3}$")]      // a pattern alone
+  public required string CurrencyCode { get; init; }
+
+  [DotNetSchemaFormat("decimal")]                     // a format on a number
+  public required decimal Price { get; init; }
+}
+```
+
+```json
+"isbn":         { "type": ["string", "null"], "format": "isbn", "pattern": "^978-\\d-\\d{3}-\\d{5}-\\d$" },
+"currencyCode": { "type": "string", "pattern": "^[A-Z]{3}$" },
+"price":        { "type": "number", "format": "decimal" }
+```
+
+> [!WARNING]
+> **Like a type mapping, this changes the schema only.** Nothing checks that the property's values have the
+> declared format, and System.Text.Json neither validates nor writes anything differently because of it.
+>
+> A format that is not one of JSON Schema's registered ones (`isbn` is not) is only an annotation to most
+> readers — and **a strict validator rejects the schema outright** until the format is registered with it
+> (Ajv does, in its default strict mode). When a reader must actually enforce the value, give a `Pattern` as
+> well.
+
+- **The property's declaration wins.** It replaces the format or pattern the property's type has of its own —
+  a `Guid`'s `uuid`, a `TimeOnly`'s pattern, a mapped type's declaration — for this property only, and only
+  the keyword it states: a format alone keeps the type's pattern. An `[EmailAddress]`, `[Url]` or
+  `[RegularExpression]` on the same property that would set a different value gives way to it (`DNS0015`);
+  one that sets the *other* keyword combines with it.
+- **On a collection it describes the values**, not the collection: the elements of an array or list, the
+  values of a dictionary (never its keys), at any depth — `IReadOnlyList<IReadOnlyList<string>>` included.
+  This differs from `[MaxLength]` on an array, which counts its elements.
+- **It applies to values with no schema of their own to keep.** On a property whose values are models or
+  enums — each described by its own definition — it is ignored with a warning (`DNS0021`), as is a `Pattern`
+  on a value that is not written as a string.
+- **On a positional record** it may be written on the parameter, without a `property:` target.
+- It is never listed in `x-decorators`: the keywords already say everything it does.
+
+| Code | Severity | What it means | What to do |
+| --- | --- | --- | --- |
+| `DNS0020` | error | The attribute is malformed — it states neither a format nor a pattern, its format is empty, or its pattern is not a valid regular expression. It is ignored. | Fix the attribute named in the message. |
+| `DNS0021` | warning | The attribute cannot apply where it is: the property's values are models or enums, or it has a `Pattern` and the values are not strings. It is ignored. | Remove it, or describe the type instead with `[DotNetSchemaType]`. |
+
 ## Diagnostics
 
 Reported in MSBuild's canonical form, so they arrive as ordinary build errors and warnings.
@@ -349,6 +415,8 @@ Reported in MSBuild's canonical form, so they arrive as ordinary build errors an
 | `DNS0017` | warning | A `DotNetSchemaType` item matched no type any exported document reached. |
 | `DNS0018` | error | A type is both marked for export and mapped. |
 | `DNS0019` | warning | A model position is written by a `[JsonConverter]` and has no mapping; it is described by `{}`. |
+| `DNS0020` | error | A `[DotNetSchemaFormat]` is malformed and was ignored. See [Property formats](#property-formats). |
+| `DNS0021` | warning | A `[DotNetSchemaFormat]` is on a property whose values take no format or pattern; it was ignored. |
 | `DNS0000` | error | The tool itself failed; the message carries the exception. |
 | `DNS0013` | error | Nothing was marked, and `DotNetSchemaFailOnEmpty` is set. |
 | `DNS1001` | error | The export tool could not be located. Raised by the targets, not the tool. |
@@ -392,12 +460,13 @@ The ordinary build never exercises the packaged path, so check it by hand before
 
 ```
 DotNetSchema/
-  DotNetSchema.csproj          the attribute, and the packaging that ships the tool
+  DotNetSchema.csproj            the attribute, and the packaging that ships the tool
   DotNetSchemaAttribute.cs
-  DotNetSchemaTypeAttribute.cs [DotNetSchemaType]: a type's declared inline schema
+  DotNetSchemaTypeAttribute.cs   [DotNetSchemaType]: a type's declared inline schema
+  DotNetSchemaFormatAttribute.cs [DotNetSchemaFormat]: a property's declared format and pattern
   buildTransitive/
-    DotNetSchema.props         overridable defaults; imported first on the package path
-    DotNetSchema.targets       the export target; imports the .props if it has not been
+    DotNetSchema.props           overridable defaults; imported first on the package path
+    DotNetSchema.targets         the export target; imports the .props if it has not been
   README.md
 ```
 

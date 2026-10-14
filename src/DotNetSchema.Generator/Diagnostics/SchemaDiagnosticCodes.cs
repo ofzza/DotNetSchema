@@ -60,4 +60,13 @@ public static class SchemaDiagnosticCodes
   /// A model position is governed by a <c>[JsonConverter]</c> and has no type mapping, so its shape is unknown.
   /// </summary>
   public const string ConverterWithoutMapping = "DNS0019";
+
+  /// <summary>A <c>[DotNetSchemaFormat]</c> on a property is malformed; it was ignored.</summary>
+  public const string InvalidPropertyFormat = "DNS0020";
+
+  /// <summary>
+  /// A <c>[DotNetSchemaFormat]</c> is on a property whose value takes no format or pattern — a model, an
+  /// enum, or a pattern on a value that is not a string; it was ignored.
+  /// </summary>
+  public const string PropertyFormatNotApplicable = "DNS0021";
 }

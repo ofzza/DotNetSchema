@@ -61,6 +61,7 @@ AssessmentRecord scalars = fixtures.GenerateAssessmentRecord(42);   // scalars o
 | An attribute on a positional record's constructor parameter; `[JsonRequired]`; DataAnnotations `[Required]` | `Bookmark`, outside the graph — see [Decorators](#decorators) |
 | A type described inline by `[DotNetSchemaType]`, serialised by its own converter, nullable | `Person.StudentNumber` (`StudentNumber`, a `pattern`) |
 | A generic type mapped on its definition, covering a construction | `Book.CatalogueId` (`CatalogueId<Book>`, `format: uuid`, a converter factory) |
+| A property's own format and/or pattern, `[DotNetSchemaFormat]` | `Book.Isbn` (both, nullable), `Department.CostCentre` (pattern only), `Book.Price` (format on a number), `Address.CountryCode` (format, beside `[RegularExpression]`'s pattern); `Bookmark.Tags` and `Bookmark.Anchor` outside the graph — see [Decorators](#decorators) |
 
 ### What counts as "portable"
 
@@ -139,7 +140,7 @@ record Campus {
 }
 
 record Address {
-    Street, City, CountryCode             : string
+    Street, City, CountryCode             : string     // CountryCode: [DotNetSchemaFormat] format
     PostalCode?                           : string?
     Latitude, Longitude                   : double
 }
@@ -166,7 +167,7 @@ record Room {
 record Department {
     Id              : Guid
     Name            : DepartmentName
-    CostCentre?     : string
+    CostCentre?     : string                                // [DotNetSchemaFormat] pattern only
     AnnualBudget    : decimal?
     EstablishedOn   : DateOnly
     Head            : Person?
@@ -237,10 +238,10 @@ record Book {
     Id                 : Guid
     CatalogueId        : CatalogueId<Book>                  // generic, [DotNetSchemaType] on its definition
     Name               : BookName
-    Isbn               : string?                            // [JsonRequired], not the modifier
+    Isbn               : string?                            // [JsonRequired], not the modifier; [DotNetSchemaFormat]
     Edition            : byte
     PageCount          : ushort
-    Price              : decimal
+    Price              : decimal                            // [DotNetSchemaFormat] on a number
     PublishedOn        : DateOnly
     Binding            : BookBinding                        // the one string-converted enum
     HasDigitalLicence? : bool
@@ -530,6 +531,7 @@ a generated value: every constraint below already holds for whatever `FixturesSe
 | `[RegularExpression]` | `Address.CountryCode` |
 | `[Display(Name, Description)]` | `Book.Isbn` |
 | `[DefaultValue]` | `Book.HasDigitalLicence` |
+| `[DotNetSchemaFormat]` — format and pattern, nullable / pattern only / on a number / beside `[RegularExpression]` | `Book.Isbn` / `Department.CostCentre` / `Book.Price` / `Address.CountryCode` |
 
 **Sampler attributes** — `SampleDecoratorAttribute` and the repeatable `SampleTagAttribute`, in
 `Schema/Decorators/` — mean nothing; between them they take every kind of argument an attribute can carry.
@@ -560,7 +562,8 @@ builds one — for the cases the graph cannot carry without changing what it mea
 | `Rank` | `[Range]` written without a target, so on the constructor parameter — still read |
 | `Label` | DataAnnotations `[Required]` on an optional, nullable property — listed, but neither required nor narrowed |
 | `Note` | `[property: Obsolete]` and `[property: Description]` |
-| `Tags` | `SampleTag` on the parameter, on the property, and identically on both (listed once) |
+| `Tags` | `SampleTag` on the parameter, on the property, and identically on both (listed once); a `[DotNetSchemaFormat]` pattern on the parameter, applied to the elements |
+| `Anchor` | `[DotNetSchemaFormat("uuid-v7")]` on a `Guid`, replacing its own `uuid` |
 | `Revision` | `[JsonRequired]` without the C# `required` modifier — required in the schema |
 
 ---
@@ -697,7 +700,8 @@ Both values are drawn from seeds of their own, so adding them moved no other gen
 holds the shapes an exporter has to have an answer for — a property typed `object`, a generic model, a
 record used as a dictionary key, two types with the same short name, two properties with the same JSON
 name, a `[Range]` on a string, a malformed `[DotNetSchemaType]`, a marked type that is also mapped, a
-converter-written type with no mapping — so that the diagnostics can be tested against real declarations rather
+converter-written type with no mapping, a malformed `[DotNetSchemaFormat]`, and one on a model, one with a
+pattern on a number and one clashing with `[EmailAddress]` — so that the diagnostics can be tested against real declarations rather
 than against types invented inside a test. They carry `[ExportForTesting]` rather than `[DotNetSchema]`, because marking them
 properly would export them, and exporting them would fail this project's own build.
 

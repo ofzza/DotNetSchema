@@ -17,6 +17,10 @@ namespace DotNetSchema;
 /// which always takes precedence. On a generic type the declaration covers every construction of it. See the
 /// package README, "Custom type mappings".
 /// </para>
+/// <para>
+/// To give a single property a format or pattern instead — say, an ISBN held in a <c>string</c> — use
+/// <see cref="DotNetSchemaFormatAttribute" /> on the property.
+/// </para>
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum, AllowMultiple = false, Inherited = false)]
 public sealed class DotNetSchemaTypeAttribute : Attribute

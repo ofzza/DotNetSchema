@@ -1,4 +1,4 @@
-# DotNetSchema.Generator
+﻿# DotNetSchema.Generator
 
 The engine behind [`DotNetSchema`](../DotNetSchema/README.md). Give it
 assemblies, get JSON Schema Draft 2020-12 documents.
@@ -63,6 +63,7 @@ DotNetSchema.Generator/
     DefinitionNameResolver.cs    $defs names, and collisions
     SchemaTypeRef.cs
     DecoratorKeywords.cs         well-known attributes to standard keywords
+    PropertyFormat.cs            [DotNetSchemaFormat]: a property's own format and pattern
   Emit/
     SchemaDocumentWriter.cs      the document, key by key
     JsonWriterDefaults.cs        the writer settings that make output byte-stable
@@ -214,7 +215,7 @@ rules' wildcard, which as a prefix would also catch every consumer namespace beg
 
 A bound never loosens the type's own: `[Range(1, 99)]` on a `byte` gives `minimum: 1, maximum: 99`, and
 `[Range(-1000, 1000)]` on it keeps `0` and `255`. A `pattern` or `format` that would clash with the type's
-own (a `Guid`'s `uuid`), or any keyword on a schema it cannot describe (`[Range]` on a string), contributes
+own (a `Guid`'s `uuid`) or with a [`[DotNetSchemaFormat]`](#property-formats) on the property, or any keyword on a schema it cannot describe (`[Range]` on a string), contributes
 nothing and raises `DNS0015`; the entry stays in `x-decorators`. Attributes that cannot be decoded at all —
 an argument naming a type from an assembly the load cannot resolve — raise `DNS0014`, and that member's
 decorators are left out.
@@ -262,6 +263,28 @@ the generator implements are:
 This is the second deliberate step beyond "the schema describes what System.Text.Json writes", after the
 [decorator keywords](#decorators): the generator cannot see a converter's output, so a mapping is the
 consumer's assertion about it, taken on trust.
+
+## Property formats
+
+`[DotNetSchemaFormat]` on a property (or, for a positional record, on its primary-constructor parameter —
+found through `DecoratorReader.PrimaryParameter`) declares a `format` and/or `pattern` for that property's
+values, never its `type`. The package README, ["Property formats"](../DotNetSchema/README.md#property-formats),
+is the user-facing account; the rules `PropertyFormat` implements are:
+
+- **Placement:** applied to the property's body after `Body` builds it and **before**
+  `DecoratorKeywords.Constrain`, so it replaces the type's own keyword (`ScalarTable`'s, a mapping's), and a
+  clashing `[EmailAddress]` / `[Url]` / `[RegularExpression]` then fails the existing `Exclusive` check and
+  raises `DNS0015` — the explicit declaration wins. Only the keyword stated is replaced.
+- **Collections:** it walks `Array` → `items` and `Map` → `additionalProperties` to the leaf, at any depth;
+  never `propertyNames`. A nullable leaf has already been widened with a type array, beside which a format or
+  pattern says nothing about the null.
+- **`DNS0020`** (error): neither argument, an empty format, or a pattern that does not compile as a .NET
+  `Regex`. **`DNS0021`** (warning): the leaf is a model, an enum or opaque, or a pattern meets a leaf whose
+  `type` is not `string`. Either way nothing of the attribute is applied.
+- It lives in the `DotNetSchema` namespace, so it is never in `x-decorators`.
+
+Like a mapping, it is the model author's unchecked assertion — the third deliberate step beyond "the schema
+describes what System.Text.Json writes".
 
 ## Determinism
 

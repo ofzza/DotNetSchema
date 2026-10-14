@@ -200,7 +200,7 @@ public sealed class DecoratorReader(SchemaGenerationOptions options)
   /// <c>Deconstruct</c> the compiler emits beside its primary constructor, with the same parameter names in
   /// the same order; an ordinary constructor that merely shares a parameter name does not qualify.
   /// </summary>
-  private static ParameterInfo? PrimaryParameter(PropertyInfo property)
+  internal static ParameterInfo? PrimaryParameter(PropertyInfo property)
   {
     if (property.DeclaringType is not { } type)
     {

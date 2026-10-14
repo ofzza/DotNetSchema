@@ -14,7 +14,11 @@ public sealed record Department
   /// <summary>Which faculty this is.</summary>
   public required DepartmentName Name { get; init; }
 
-  /// <summary>Internal cost-centre code. Optional but never null: empty when none is assigned.</summary>
+  /// <summary>
+  /// Internal cost-centre code. Optional but never null: empty when none is assigned. A pattern-only
+  /// <c>[DotNetSchemaFormat]</c>, which has to admit the empty code too.
+  /// </summary>
+  [DotNetSchemaFormat(Pattern = @"^(?:CC-\d{3})?$")]
   public string CostCentre { get; init; } = "";
 
   /// <summary>Annual operating budget. Required but nullable: <c>null</c> until the budget is approved.</summary>

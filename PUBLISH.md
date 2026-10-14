@@ -63,7 +63,7 @@ EOF
 $ cat > Lib/Customer.cs <<'EOF'
 using DotNetSchema;
 namespace Lib;
-[DotNetSchema] public sealed record Customer(Guid Id, string Name, Customer? Referrer, Email Email, Code Code);
+[DotNetSchema] public sealed record Customer(Guid Id, [DotNetSchemaFormat("hostname")] string Name, Customer? Referrer, Email Email, Code Code);
 [DotNetSchemaType("string", Format = "email")] public readonly record struct Email(string Value);
 public readonly record struct Code(string Value);
 EOF
@@ -91,6 +91,7 @@ It passes when:
 - both builds succeed with no `DNS` warnings or errors;
 - `Host/bin/Debug/net10.0/Host.schema.json` exists, defines `Customer` in `$defs`, and is **not** rewritten by the second build (its timestamp does not move);
 - in it, `Customer.email` is `{"type":"string","format":"email",…}` and `Customer.code` is `{"type":"string","pattern":"^[A-Z]*;?$",…}` — the attribute and the item both reached the packaged tool — and neither `Email` nor `Code` is in `$defs`;
+- `Customer.name` is `{"type":"string","format":"hostname"}` — `[DotNetSchemaFormat]`, written on the positional parameter, reached it too;
 - nothing `*.schema.json` appears under `Lib/bin/`;
 - `pub/Host.schema.json` exists;
 - neither csproj contains an `<Import>`.
