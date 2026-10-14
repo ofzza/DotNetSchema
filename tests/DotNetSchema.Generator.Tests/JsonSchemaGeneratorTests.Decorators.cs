@@ -16,10 +16,7 @@ public sealed partial class JsonSchemaGeneratorTests
   /// The defaults plus the fixtures' own sampler attributes, which sit outside the default list so that the
   /// school graph can carry them without moving the golden digests.
   /// </summary>
-  private static readonly SchemaGenerationOptions WithSampler = SchemaGenerationOptions.Default with
-  {
-    DecoratorsAllow = ["DotNetSchema.Fixtures.Schema.Decorators.*"],
-  };
+  private static readonly SchemaGenerationOptions WithSampler = Rules(Include("DotNetSchema.Fixtures.Schema.Decorators.*"));
 
   // Rendering: one test per kind of argument an attribute can carry.
 
@@ -227,41 +224,45 @@ public sealed partial class JsonSchemaGeneratorTests
   }
 
   [Fact]
-  public void AllowingAnExactName_AddsThatAttributeAlone()
+  public void IncludingAnExactName_AddsThatAttributeAlone()
   {
-    var options = SchemaGenerationOptions.Default with { DecoratorsAllow = [Tag] };
-    var names = AllDecoratorNames(Document(options, typeof(School)));
+    var names = AllDecoratorNames(Document(Rules(Include(Tag)), typeof(School)));
 
     Assert.Contains(Tag, names);
     Assert.DoesNotContain(Sampler, names);
   }
 
   [Fact]
-  public void ANamespaceWildcard_DoesNotReachIntoSubNamespaces()
+  public void AWildcard_ReachesIntoSubNamespaces()
   {
-    var options = SchemaGenerationOptions.Default with { DecoratorsAllow = ["DotNetSchema.Fixtures.Schema.*"] };
+    // The sampler attributes live in Schema.Decorators, one namespace below the pattern's.
+    var names = AllDecoratorNames(Document(Rules(Include("DotNetSchema.Fixtures.Schema.*")), typeof(School)));
+
+    Assert.Contains(Sampler, names);
+    Assert.Contains(Tag, names);
+  }
+
+  [Fact]
+  public void ExcludingTheDoubleWildcard_KeepsOnlyTheNamespacesOwnTypes()
+  {
+    var options = Rules(Include("DotNetSchema.Fixtures.Schema.*"), Exclude("DotNetSchema.Fixtures.Schema.*.*"));
 
     Assert.DoesNotContain(AllDecoratorNames(Document(options, typeof(School))), n => n.StartsWith("DotNetSchema.", StringComparison.Ordinal));
   }
 
   [Fact]
-  public void DenyingAnAttribute_RemovesBothItsEntry_AndTheKeywordsItMapsTo()
+  public void ExcludingAnAttribute_RemovesBothItsEntry_AndTheKeywordsItMapsTo()
   {
-    var options = SchemaGenerationOptions.Default with { DecoratorsDeny = ["System.ObsoleteAttribute"] };
-    var note = Property(Definition("Bookmark", options, typeof(Bookmark)), "note");
+    var note = Property(Definition("Bookmark", Rules(Exclude("System.ObsoleteAttribute")), typeof(Bookmark)), "note");
 
     Assert.Null(note["deprecated"]);
     Assert.Equal(["System.ComponentModel.DescriptionAttribute"], DecoratorNames(note));
   }
 
   [Fact]
-  public void DenyingOneTypeOutOfAnAllowedNamespace_LeavesTheRestOfItAlone()
+  public void ExcludingOneTypeOutOfAnIncludedNamespace_LeavesTheRestOfItAlone()
   {
-    var options = SchemaGenerationOptions.Default with
-    {
-      DecoratorsDeny = ["System.ComponentModel.DataAnnotations.RangeAttribute"],
-    };
-    var book = Definition("Book", options, typeof(School));
+    var book = Definition("Book", Rules(Exclude("System.ComponentModel.DataAnnotations.RangeAttribute")), typeof(School));
 
     // Back to the byte's own bounds, with nothing listed; the [MaxLength] beside it is untouched.
     Assert.Equal("""{"type":"integer","minimum":0,"maximum":255}""", Compact(Property(book, "edition")));
@@ -269,9 +270,9 @@ public sealed partial class JsonSchemaGeneratorTests
   }
 
   [Fact]
-  public void SettingTheList_ReplacesTheDefaults()
+  public void ExcludingEverythingFirst_StartsFromScratch()
   {
-    var options = SchemaGenerationOptions.Default with { Decorators = ["System.ComponentModel.DescriptionAttribute"] };
+    var options = Rules(Exclude("*"), Include("System.ComponentModel.DescriptionAttribute"));
     var document = Document(options, typeof(School));
 
     Assert.Equal(["System.ComponentModel.DescriptionAttribute"], AllDecoratorNames(document).Distinct());
@@ -280,14 +281,27 @@ public sealed partial class JsonSchemaGeneratorTests
   }
 
   [Fact]
-  public void TheListAllowAndDeny_Combine_DenyWinning()
+  public void ALaterInclude_TakesBackAnEarlierExclude()
   {
-    var options = SchemaGenerationOptions.Default with
-    {
-      Decorators = ["System.ComponentModel.DataAnnotations.*"],
-      DecoratorsAllow = [Tag],
-      DecoratorsDeny = ["System.ComponentModel.DataAnnotations.RangeAttribute"],
-    };
+    // What a deny-always-wins selection could not say: all of DataAnnotations out, then one of it back in.
+    var options = Rules(
+      Exclude("System.ComponentModel.DataAnnotations.*"),
+      Include("System.ComponentModel.DataAnnotations.RangeAttribute"));
+    var document = Document(options, typeof(School));
+
+    Assert.Equal(1, Property(Defs(document, "Book"), "edition")["minimum"]!.GetValue<int>());
+    Assert.Null(Property(Defs(document, "Book"), "chapters")["maxItems"]);
+    Assert.Null(Property(Defs(document, "Person"), "email")["format"]);
+  }
+
+  [Fact]
+  public void TheRulesApplyInOrder_TheLastMatchDeciding()
+  {
+    var options = Rules(
+      Exclude("*"),
+      Include("System.ComponentModel.DataAnnotations.*"),
+      Include(Tag),
+      Exclude("System.ComponentModel.DataAnnotations.RangeAttribute"));
     var document = Document(options, typeof(School));
     var school = Defs(document, "School");
 
@@ -298,31 +312,39 @@ public sealed partial class JsonSchemaGeneratorTests
   }
 
   [Fact]
-  public void DenyingEverything_SwitchesTheFeatureOff()
+  public void ExcludingEverything_SwitchesTheFeatureOff_WhateverCameBefore()
   {
-    var off = Generate(SchemaGenerationOptions.Default with { DecoratorsDeny = ["*"] }, typeof(School), typeof(Bookmark));
-    var empty = Generate(SchemaGenerationOptions.Default with { Decorators = [] }, typeof(School), typeof(Bookmark));
+    var off = Generate(Rules(Exclude("*")), typeof(School), typeof(Bookmark));
+    var late = Generate(Rules(Include(Tag), Exclude("*")), typeof(School), typeof(Bookmark));
 
     var json = Assert.Single(off.Documents).Json;
     Assert.DoesNotContain("x-decorators", json, StringComparison.Ordinal);
     Assert.DoesNotContain("\"description\"", json, StringComparison.Ordinal);
     Assert.DoesNotContain("\"deprecated\"", json, StringComparison.Ordinal);
-    Assert.Equal(Assert.Single(empty.Documents).Json, json);
+    Assert.Equal(Assert.Single(late.Documents).Json, json);
   }
 
   [Fact]
-  public void AllowingEverything_StillNeverExposesCompilerOrSerialiserAttributes()
+  public void IncludingEverything_StillNeverExposesCompilerOrSerialiserAttributes()
   {
     // The school graph carries nullable annotations, required members and a [JsonConverter], all of which
-    // the schema already reflects in its own terms, plus the marker itself.
-    var names = AllDecoratorNames(Document(SchemaGenerationOptions.Default with { DecoratorsAllow = ["*"] }, typeof(School)));
+    // the schema already reflects in its own terms, plus the marker and [DotNetSchemaType].
+    var names = AllDecoratorNames(Document(Rules(Include("*")), typeof(School)));
 
     Assert.NotEmpty(names);
     Assert.DoesNotContain(names, n =>
       n.StartsWith("System.Runtime.CompilerServices.", StringComparison.Ordinal) ||
       n.StartsWith("System.Text.Json.Serialization.", StringComparison.Ordinal) ||
-      n == "DotNetSchema.DotNetSchemaAttribute");
+      n.StartsWith("DotNetSchema.DotNetSchema", StringComparison.Ordinal));
   }
+
+  /// <summary>The default options with the given decorator rules applied after the defaults.</summary>
+  private static SchemaGenerationOptions Rules(params DecoratorRule[] rules) =>
+    SchemaGenerationOptions.Default with { DecoratorRules = rules };
+
+  private static DecoratorRule Include(string pattern) => new(pattern, Include: true);
+
+  private static DecoratorRule Exclude(string pattern) => new(pattern, Include: false);
 
   /// <summary>An <c>x-decorators</c> entry as compact JSON.</summary>
   private static string Entry(string name, string? arguments = null) =>

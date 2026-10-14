@@ -21,15 +21,20 @@
       code generators that only look for the vendor keyword.
     -->
     <DotNetSchemaEnumStyle>EnumWithNames</DotNetSchemaEnumStyle>
-    <!--
-      Optional: adjust which attributes are exposed under x-decorators (and mapped to standard keywords).
-      Allow adds the models' own attributes to the default list; Deny takes defaults back out - here
-      StringLength, so Customer.Name gets no maxLength. Both are ';'-separated lists of attribute full names,
-      Ns.* wildcards or '*'; DotNetSchemaDecorators would replace the default list outright.
-    -->
-    <DotNetSchemaDecoratorsAllow>DotNetSchema.Sample.Models.*</DotNetSchemaDecoratorsAllow>
-    <DotNetSchemaDecoratorsDeny>System.ObsoleteAttribute;System.ComponentModel.DataAnnotations.StringLengthAttribute</DotNetSchemaDecoratorsDeny>
   </PropertyGroup>
+
+  <!--
+    Optional: adjust which attributes are exposed under x-decorators (and mapped to standard keywords). Each
+    item is a rule applied after the default ones, in the order written, and the last rule matching an
+    attribute decides. Here: add the models' own attributes, then take two defaults back out - Obsolete, and
+    StringLength, so Customer.Name gets no maxLength. In a pattern '*' matches anything, dots included; a
+    rule excluding '*' would clear everything before it.
+  -->
+  <ItemGroup>
+    <DotNetSchemaDecorator Include="true" Attribute="DotNetSchema.Sample.Models.*" />
+    <DotNetSchemaDecorator Include="false" Attribute="System.ObsoleteAttribute" />
+    <DotNetSchemaDecorator Include="false" Attribute="System.ComponentModel.DataAnnotations.StringLengthAttribute" />
+  </ItemGroup>
 
   <!--
     Optional: describe a type inline by a declared schema rather than as an object definition. CountryCode is

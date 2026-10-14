@@ -50,7 +50,7 @@ public sealed partial class JsonSchemaGeneratorTests
     // The same invariant with every attribute allowed, so each kind of attribute argument — types, enums,
     // boxed values, arrays — is decoded both ways. A Type argument's FullName alone would already differ:
     // a constructed generic embeds System.Private.CoreLib at runtime and System.Runtime through metadata.
-    var options = SchemaGenerationOptions.Default with { DecoratorsAllow = ["*"] };
+    var options = SchemaGenerationOptions.Default with { DecoratorRules = [new DecoratorRule("*", Include: true)] };
     var fromRuntime = new JsonSchemaGenerator().Generate([FixturesAssembly], options);
 
     using var context = MetadataOnly();

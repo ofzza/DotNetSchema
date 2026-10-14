@@ -19,14 +19,16 @@ namespace DotNetSchema.Generator.Reflection;
 public sealed class DecoratorReader(SchemaGenerationOptions options)
 {
   /// <summary>
-  /// Never exposed, whatever the selection says: the compiler's own bookkeeping, the System.Text.Json
-  /// attributes the schema already reflects, and this package's attributes.
+  /// Never exposed, whatever the rules say: the compiler's own bookkeeping, the System.Text.Json attributes
+  /// the schema already reflects, and this package's attributes. Matched by exact namespace, not by the
+  /// rules' wildcard: <c>DotNetSchema</c> as a prefix would also swallow every consumer namespace that
+  /// happens to start with it.
   /// </summary>
   private static readonly string[] HardExcluded =
   [
-    "System.Runtime.CompilerServices.*",
-    "System.Text.Json.Serialization.*",
-    "DotNetSchema.*",
+    "System.Runtime.CompilerServices",
+    "System.Text.Json.Serialization",
+    "DotNetSchema",
   ];
 
   private static readonly JsonSerializerOptions Compact = new() { WriteIndented = false };
@@ -89,39 +91,65 @@ public sealed class DecoratorReader(SchemaGenerationOptions options)
 
   private bool IsSelected(Type attributeType)
   {
-    if (Matches(HardExcluded, attributeType) ||
-        string.Equals(attributeType.FullName, options.MarkerAttributeFullName, StringComparison.Ordinal))
+    if (HardExcluded.Contains(attributeType.Namespace, StringComparer.Ordinal) ||
+        string.Equals(attributeType.FullName, options.MarkerAttributeFullName, StringComparison.Ordinal) ||
+        attributeType.FullName is not { } name)
     {
       return false;
     }
 
-    if (Matches(options.DecoratorsDeny, attributeType))
+    // The defaults first, then the caller's rules in the order they were written; the last rule that matches
+    // decides, so a later rule can always take back what an earlier one said. Nothing matching means no.
+    var rules = SchemaGenerationOptions.DefaultDecorators.Concat(options.DecoratorRules).ToList();
+    for (var i = rules.Count - 1; i >= 0; i--)
     {
-      return false;
+      if (Matches(rules[i].Pattern, name))
+      {
+        return rules[i].Include;
+      }
     }
 
-    return Matches(options.Decorators ?? SchemaGenerationOptions.DefaultDecorators, attributeType) ||
-           Matches(options.DecoratorsAllow, attributeType);
+    return false;
   }
 
-  private static bool Matches(IEnumerable<string> patterns, Type attributeType) =>
-    patterns.Any(pattern => Matches(pattern, attributeType));
-
-  private static bool Matches(string pattern, Type attributeType)
+  /// <summary>
+  /// Whether a full name matches a pattern in which <c>*</c> stands for any run of characters, dots
+  /// included — so <c>Ns.*</c> reaches sub-namespaces too, and <c>Ns.*.*</c> is exactly those. Everything
+  /// else is literal and compared ordinally.
+  /// </summary>
+  internal static bool Matches(string pattern, string name)
   {
-    if (pattern == "*")
+    // Classic greedy wildcard matching with a single backtrack point, linear in practice.
+    int p = 0, n = 0, star = -1, resume = 0;
+    while (n < name.Length)
     {
-      return true;
+      if (p < pattern.Length && pattern[p] == '*')
+      {
+        star = p++;
+        resume = n;
+      }
+      else if (p < pattern.Length && pattern[p] == name[n])
+      {
+        p++;
+        n++;
+      }
+      else if (star >= 0)
+      {
+        p = star + 1;
+        n = ++resume;
+      }
+      else
+      {
+        return false;
+      }
     }
 
-    // A namespace wildcard reaches only the types directly in that namespace, so allowing DataAnnotations
-    // does not quietly pull in Entity Framework's DataAnnotations.Schema mapping attributes.
-    if (pattern.EndsWith(".*", StringComparison.Ordinal))
+    while (p < pattern.Length && pattern[p] == '*')
     {
-      return string.Equals(attributeType.Namespace, pattern[..^2], StringComparison.Ordinal);
+      p++;
     }
 
-    return string.Equals(attributeType.FullName, pattern, StringComparison.Ordinal);
+    return p == pattern.Length;
   }
 
   private static Decorator ToDecorator(CustomAttributeData attribute)

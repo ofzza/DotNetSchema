@@ -60,38 +60,34 @@ public sealed record SchemaGenerationOptions
   public UnmappedTypePolicy UnmappedTypes { get; init; } = UnmappedTypePolicy.Error;
 
   /// <summary>
-  /// The attributes exposed as <c>x-decorators</c> when <see cref="Decorators" /> is not set: the
-  /// declarative validation and description attributes a schema reader is likely to want, and nothing that
-  /// only matters to the compiler or the runtime.
+  /// The rules every selection starts from: the declarative validation and description attributes a schema
+  /// reader is likely to want, and nothing that only matters to the compiler or the runtime.
+  /// <see cref="DecoratorRules" /> are applied after these, so a caller can take any of them back.
   /// </summary>
   /// <remarks>
-  /// Part of the output contract — changing this list changes every consumer's documents.
+  /// Part of the output contract — changing this list changes every consumer's documents. The DataAnnotations
+  /// sub-namespaces are excluded explicitly because <c>*</c> is recursive: without it, Entity Framework's
+  /// <c>DataAnnotations.Schema</c> mapping attributes (<c>[Column]</c>, <c>[Table]</c>, …) would come in too.
   /// </remarks>
-  public static IReadOnlyList<string> DefaultDecorators { get; } =
+  public static IReadOnlyList<DecoratorRule> DefaultDecorators { get; } =
   [
-    "System.ComponentModel.DataAnnotations.*",
-    "System.ComponentModel.DefaultValueAttribute",
-    "System.ComponentModel.DescriptionAttribute",
-    "System.ComponentModel.DisplayNameAttribute",
-    "System.ObsoleteAttribute",
+    new("System.ComponentModel.DataAnnotations.*", Include: true),
+    new("System.ComponentModel.DataAnnotations.*.*", Include: false),
+    new("System.ComponentModel.DefaultValueAttribute", Include: true),
+    new("System.ComponentModel.DescriptionAttribute", Include: true),
+    new("System.ComponentModel.DisplayNameAttribute", Include: true),
+    new("System.ObsoleteAttribute", Include: true),
   ];
 
   /// <summary>
-  /// The attributes exposed as <c>x-decorators</c>, and translated into standard keywords where one fits,
-  /// replacing <see cref="DefaultDecorators" />; <see langword="null" /> keeps the defaults. Each entry is an
-  /// attribute's full name, a namespace wildcard <c>Ns.*</c> (types directly in <c>Ns</c>, not in its
-  /// sub-namespaces) or <c>*</c>.
+  /// Rules applied after <see cref="DefaultDecorators" />, in order, choosing which attributes are exposed as
+  /// <c>x-decorators</c> and translated into standard keywords. For each attribute the <em>last</em> rule whose
+  /// pattern matches its full name decides; an attribute no rule matches is left out. In a pattern <c>*</c>
+  /// matches any run of characters, dots included, so <c>Ns.*</c> covers sub-namespaces and
+  /// <c>(Ns.*.*, exclude)</c> after it narrows that to the types directly in <c>Ns</c>; <c>(*, exclude)</c>
+  /// clears everything before it.
   /// </summary>
-  public IReadOnlyList<string>? Decorators { get; init; }
-
-  /// <summary>Patterns added to <see cref="Decorators" /> (or to the defaults it stands in for).</summary>
-  public IReadOnlyList<string> DecoratorsAllow { get; init; } = [];
-
-  /// <summary>
-  /// Patterns removed from the selection after <see cref="DecoratorsAllow" /> is added; deny always wins.
-  /// <c>*</c> switches the feature off.
-  /// </summary>
-  public IReadOnlyList<string> DecoratorsDeny { get; init; } = [];
+  public IReadOnlyList<DecoratorRule> DecoratorRules { get; init; } = [];
 
   /// <summary>
   /// Types described inline by a declared schema rather than by their shape — the build's

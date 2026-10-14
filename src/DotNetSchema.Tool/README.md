@@ -26,15 +26,12 @@ reaches a shell.
 | `--manifest=<path>` | no | File recording what was produced. |
 | `--fail-on-empty=true\|false` | no | Whether producing nothing is an error. |
 | `--enum-style=<style>` | no | `OneOfConstTitle` (default), `EnumWithNames` or `Enum`, ignoring case. Anything else, a number included, is `DNS0000`. |
-| `--decorators=<patterns>` | yes | `;`-separated attribute patterns (full name, `Ns.*` or `*`) replacing the generator's default decorator list. Given at all, even empty, it replaces the list. |
-| `--decorators-allow=<patterns>` | yes | Patterns added to the decorator list. |
-| `--decorators-deny=<patterns>` | yes | Patterns removed from the decorator list, deny winning. |
+| `--decorator=<true\|false>\|<pattern>` | yes | One `DotNetSchemaDecorator` item: include or exclude the attributes matching a pattern. Kept in the order given, which is their meaning — the last matching rule wins. `Include` other than `true` / `false` (ignoring case), or no pattern, is `DNS0000`. |
 | `--type-mapping=<name>\|<type>\|<format>\|<pattern>` | yes | One `DotNetSchemaType` item: a type's full name and its declared inline schema. Empty fields are absent. Split into at most four parts, so the pattern, last, may contain `\|`. Validated by the generator (`DNS0016`), not here. |
 
-A path containing `;` is not supported: MSBuild splits item lists on it long before the tool sees it. The
-decorator lists are the exception that proves the rule — the targets escape each one so it arrives as one
-line, and the tool does the splitting. A type mapping's pattern may contain `;` too: the targets build each
-line with an item transform, whose result MSBuild does not split. Response-file lines are trimmed, so a
+A path containing `;` is not supported: MSBuild splits item lists on it long before the tool sees it. A
+decorator or type-mapping pattern may contain `;` (and `*`): the targets build each line with an item
+transform over the item's metadata, whose result MSBuild neither splits nor globs. Response-file lines are trimmed, so a
 pattern cannot end in whitespace.
 
 ## What it does that is not obvious
@@ -76,7 +73,8 @@ DotNetSchema.Tool/
 `MetadataLoadContextFactory`, `SchemaFileWriter` and `ToolArguments` are public so another front end
 (a CLI, a test harness) can drive the same metadata-only load and the same idempotent writes. Treat their
 signatures as API. `ToolArguments` gained `Decorators`, `DecoratorsAllow` and `DecoratorsDeny` (after `EnumStyle`) in the
-release that introduced `x-decorators`, and `TypeMappings` (last) in the one that introduced type mappings.
+release that introduced `x-decorators`; the release after replaced those three with `DecoratorRules`, and
+added `TypeMappings` (last).
 
 ## Tests
 

@@ -534,7 +534,7 @@ a generated value: every constraint below already holds for whatever `FixturesSe
 **Sampler attributes** — `SampleDecoratorAttribute` and the repeatable `SampleTagAttribute`, in
 `Schema/Decorators/` — mean nothing; between them they take every kind of argument an attribute can carry.
 That namespace is deliberately outside the default list, so they never reach the documents in `bin/` or the
-goldens; a test that wants them allows `DotNetSchema.Fixtures.Schema.Decorators.*`.
+goldens; a test that wants them includes `DotNetSchema.Fixtures.Schema.Decorators.*`.
 
 | Arguments | Where |
 | --- | --- |

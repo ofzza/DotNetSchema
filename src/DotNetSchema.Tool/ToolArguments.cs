@@ -10,9 +10,7 @@ namespace DotNetSchema.Tool;
 /// <param name="ManifestPath">File recording what was produced, so the build can track and prune it.</param>
 /// <param name="FailOnEmpty">Whether producing nothing is an error.</param>
 /// <param name="EnumStyle">The shape enum values take in the documents.</param>
-/// <param name="Decorators">Attribute patterns replacing the default decorator list, or <see langword="null" /> to keep it.</param>
-/// <param name="DecoratorsAllow">Attribute patterns added to the decorator list.</param>
-/// <param name="DecoratorsDeny">Attribute patterns removed from the decorator list.</param>
+/// <param name="DecoratorRules">Decorator selection rules, in the order they were written.</param>
 /// <param name="TypeMappings">Types described by a declared inline schema, in configuration order.</param>
 public sealed record ToolArguments(
   IReadOnlyList<string> Scan,
@@ -22,9 +20,7 @@ public sealed record ToolArguments(
   string ManifestPath,
   bool FailOnEmpty,
   EnumStyle EnumStyle,
-  IReadOnlyList<string>? Decorators,
-  IReadOnlyList<string> DecoratorsAllow,
-  IReadOnlyList<string> DecoratorsDeny,
+  IReadOnlyList<DecoratorRule> DecoratorRules,
   IReadOnlyList<TypeMapping> TypeMappings)
 {
   /// <summary>
@@ -35,9 +31,9 @@ public sealed record ToolArguments(
   /// which exceeds the command-line length limit on Windows, and one <c>--key=value</c> per line needs no
   /// quoting and never reaches a shell.
   /// <para>
-  /// The decorator arguments each carry a <c>;</c>-separated list, and may be repeated; the build passes an
-  /// MSBuild property through as one line. <c>--decorators</c> given at all, even empty, replaces the
-  /// default list.
+  /// Each <c>--decorator</c> is one <c>DotNetSchemaDecorator</c> item, as <c>true|pattern</c> or
+  /// <c>false|pattern</c>. Their order is the selection's meaning — the last matching rule wins — so they are
+  /// kept exactly in the order given.
   /// </para>
   /// <para>
   /// Each <c>--type-mapping</c> is one <c>DotNetSchemaType</c> item, as <c>name|type|format|pattern</c>. The
@@ -54,9 +50,7 @@ public sealed record ToolArguments(
     var manifestPath = string.Empty;
     var failOnEmpty = false;
     var enumStyle = EnumStyle.OneOfConstTitle;
-    List<string>? decorators = null;
-    List<string> decoratorsAllow = [];
-    List<string> decoratorsDeny = [];
+    List<DecoratorRule> decoratorRules = [];
     List<TypeMapping> typeMappings = [];
 
     foreach (var argument in Expand(arguments))
@@ -88,14 +82,8 @@ public sealed record ToolArguments(
         case "--enum-style":
           enumStyle = ParseEnumStyle(value);
           break;
-        case "--decorators":
-          (decorators ??= []).AddRange(Patterns(value));
-          break;
-        case "--decorators-allow":
-          decoratorsAllow.AddRange(Patterns(value));
-          break;
-        case "--decorators-deny":
-          decoratorsDeny.AddRange(Patterns(value));
+        case "--decorator":
+          decoratorRules.Add(ParseDecoratorRule(value));
           break;
         case "--type-mapping":
           typeMappings.Add(ParseTypeMapping(value));
@@ -113,9 +101,7 @@ public sealed record ToolArguments(
       manifestPath,
       failOnEmpty,
       enumStyle,
-      decorators,
-      decoratorsAllow,
-      decoratorsDeny,
+      decoratorRules,
       typeMappings);
   }
 
@@ -138,8 +124,36 @@ public sealed record ToolArguments(
     return new TypeMapping(parts[0].Trim(), Part(1) ?? string.Empty, Part(2), Part(3));
   }
 
-  private static IEnumerable<string> Patterns(string value) =>
-    value.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+  /// <summary>Reads a <c>true|pattern</c> or <c>false|pattern</c> decorator rule.</summary>
+  /// <remarks>
+  /// Strict, unlike a missing optional field elsewhere: a rule that silently read as the opposite of what was
+  /// written would invert the selection with no sign of it in the output.
+  /// </remarks>
+  private static DecoratorRule ParseDecoratorRule(string value)
+  {
+    var separator = value.IndexOf('|');
+    var include = separator < 0 ? value : value[..separator];
+    var pattern = separator < 0 ? string.Empty : value[(separator + 1)..].Trim();
+
+    if (pattern.Length == 0)
+    {
+      throw new ArgumentException(
+        $"The DotNetSchemaDecorator item '{include}' has no Attribute; expected a full name or a pattern.");
+    }
+
+    if (string.Equals(include.Trim(), "true", StringComparison.OrdinalIgnoreCase))
+    {
+      return new DecoratorRule(pattern, Include: true);
+    }
+
+    if (string.Equals(include.Trim(), "false", StringComparison.OrdinalIgnoreCase))
+    {
+      return new DecoratorRule(pattern, Include: false);
+    }
+
+    throw new ArgumentException(
+      $"The DotNetSchemaDecorator item for '{pattern}' has Include=\"{include}\"; expected true or false.");
+  }
 
   private static IEnumerable<string> Expand(IEnumerable<string> arguments)
   {

@@ -75,13 +75,15 @@ Every one of these is an ordinary MSBuild property, set in the host `.csproj` (o
 | `DotNetSchemaIncludeInPublish` | `true` | Whether the documents are also copied to `$(PublishDir)`. |
 | `DotNetSchemaFailOnEmpty` | `false` | Fail the build when nothing is marked. Worth turning on in CI. |
 | `DotNetSchemaEnumStyle` | `OneOfConstTitle` | How enum values carry their member names: `OneOfConstTitle` (a `oneOf` of titled constants, standard), `EnumWithNames` (`enum` plus the `x-enumNames` vendor keyword) or `Enum` (values only). |
-| `DotNetSchemaDecorators` | *(empty: the default list)* | Which attributes are exposed under `x-decorators` and mapped to standard keywords, replacing the default list. See [Attributes](#attributes-x-decorators). |
-| `DotNetSchemaDecoratorsAllow` | *(empty)* | Attributes added to that list. |
-| `DotNetSchemaDecoratorsDeny` | *(empty)* | Attributes removed from it, deny winning. `*` switches the feature off. |
 | `DotNetSchemaToolPath` | *(empty)* | Escape hatch: run a specific prebuilt export tool. |
 
-One more setting is an item rather than a property: `DotNetSchemaType` describes a type inline by a schema you
-declare. See [Custom type mappings](#custom-type-mappings).
+Single values are properties; lists are items, one element per entry, so they need no separator syntax and keep
+the order they were written in:
+
+| Item | What it does |
+| --- | --- |
+| `DotNetSchemaDecorator` | An ordered rule choosing which attributes are exposed under `x-decorators`. See [Attributes](#attributes-x-decorators). |
+| `DotNetSchemaType` | Describes a type inline by a schema you declare. See [Custom type mappings](#custom-type-mappings). |
 
 For example, to keep the documents in the source tree where a front end can pick them up:
 
@@ -162,29 +164,58 @@ description attributes are also translated into the standard keywords that say t
 }
 ```
 
-Which attributes take part is a list of attribute full names, namespace wildcards (`Ns.*`, types directly
-in `Ns`) or `*`, separated by `;`. The default list is `System.ComponentModel.DataAnnotations.*`, plus
-`DescriptionAttribute`, `DefaultValueAttribute` and `DisplayNameAttribute` from `System.ComponentModel`, and
-`System.ObsoleteAttribute`. `DotNetSchemaDecorators` replaces it, `DotNetSchemaDecoratorsAllow` adds to it and
-`DotNetSchemaDecoratorsDeny` takes away, deny winning:
+Which attributes take part is decided by **rules applied in order**: first the default ones, then your
+`DotNetSchemaDecorator` items, in the order they are written. For each attribute, **the last rule that matches
+its full name decides** whether it is included; an attribute no rule matches is left out.
 
 ```xml
-<PropertyGroup>
+<ItemGroup>
   <!-- Our own attributes as well, but no length limits. -->
-  <DotNetSchemaDecoratorsAllow>MyCompany.Models.Annotations.*</DotNetSchemaDecoratorsAllow>
-  <DotNetSchemaDecoratorsDeny>System.ComponentModel.DataAnnotations.StringLengthAttribute</DotNetSchemaDecoratorsDeny>
-</PropertyGroup>
+  <DotNetSchemaDecorator Include="true"  Attribute="MyCompany.Models.Annotations.*" />
+  <DotNetSchemaDecorator Include="false" Attribute="System.ComponentModel.DataAnnotations.StringLengthAttribute" />
+</ItemGroup>
 ```
 
-An attribute left out yields neither its `x-decorators` entry nor its keywords. MSBuild cannot tell an
-empty property from an unset one, so to switch the feature off set `DotNetSchemaDecoratorsDeny` to `*`.
-Compiler attributes, the System.Text.Json attributes (already reflected in the schema) and this package's
-own are never listed.
+`Include` is `true` or `false`; anything else fails the build (`DNS0000`). `Attribute` is an attribute's full
+name, in which `*` matches any run of characters — **dots included**, so a namespace pattern reaches its
+sub-namespaces too:
+
+| Pattern | Matches |
+| --- | --- |
+| `Ns.FooAttribute` | that attribute (a nested one is `Ns.Outer+FooAttribute`) |
+| `Ns.*` | everything in `Ns` and in every namespace below it |
+| `Ns.*.*` | only the namespaces below `Ns` — so `Ns.*` included, then `Ns.*.*` excluded, is "directly in `Ns`" |
+| `*` | everything — excluding it clears every rule before it |
+
+The default rules are, in order: include `System.ComponentModel.DataAnnotations.*`, exclude
+`System.ComponentModel.DataAnnotations.*.*` (keeping Entity Framework's `DataAnnotations.Schema` mapping
+attributes out), and include `DefaultValueAttribute`, `DescriptionAttribute` and `DisplayNameAttribute` from
+`System.ComponentModel`, and `System.ObsoleteAttribute`. Because a later rule always wins, any of them can be
+taken back, and anything can be brought back after it was excluded — start from nothing, include a namespace,
+exclude part of it, then re-include one member:
+
+```xml
+<ItemGroup>
+  <DotNetSchemaDecorator Include="false" Attribute="*" />
+  <DotNetSchemaDecorator Include="true"  Attribute="MyCompany.Annotations.*" />
+  <DotNetSchemaDecorator Include="false" Attribute="MyCompany.Annotations.Internal.*" />
+  <DotNetSchemaDecorator Include="true"  Attribute="MyCompany.Annotations.Internal.AuditedAttribute" />
+</ItemGroup>
+```
+
+Items in `Directory.Build.props` come before the project's own, and items in `Directory.Build.targets` after,
+so a shared baseline with per-project adjustments works as you would read it. The pattern goes in `Attribute`,
+never in `Include`: MSBuild expands an `Include` containing `*` as a file pattern, and one matching no file
+silently disappears.
+
+An attribute left out yields neither its `x-decorators` entry nor its keywords. Compiler attributes, the
+System.Text.Json attributes (already reflected in the schema) and this package's own are never listed,
+whatever the rules say.
 
 Two things worth knowing:
 
 - **The mapped keywords describe validation the model declares, which System.Text.Json does not enforce.**
-  A `[Range(1, 10)]` property holding `42` serialises without complaint and then fails the schema. Deny the
+  A `[Range(1, 10)]` property holding `42` serialises without complaint and then fails the schema. Exclude the
   attribute if a schema consumer must accept everything the serialiser can produce.
 - **DataAnnotations `[Required]` does not make a property `required`.** It is a non-null, non-empty check
   run after deserialising, while JSON Schema's `required` is a presence check. Use the C# `required`

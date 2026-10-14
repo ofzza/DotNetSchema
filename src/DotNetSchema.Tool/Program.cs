@@ -22,9 +22,7 @@ try
   {
     DefaultFileName = arguments.DefaultFileName,
     EnumStyle = arguments.EnumStyle,
-    Decorators = arguments.Decorators,
-    DecoratorsAllow = arguments.DecoratorsAllow,
-    DecoratorsDeny = arguments.DecoratorsDeny,
+    DecoratorRules = arguments.DecoratorRules,
     TypeMappings = arguments.TypeMappings,
   };
   var result = new JsonSchemaGenerator().Generate(assemblies, options);

@@ -181,15 +181,20 @@ the same keyword. Each selected attribute application becomes one entry:
   primary-constructor parameter. It is read from there too (a positional record is recognised by its
   compiler-generated `Deconstruct`); one applied identically to both is listed once.
 
-**Selection.** `(Decorators ?? DefaultDecorators) ∪ DecoratorsAllow − DecoratorsDeny`, deny winning. Each
-entry is an attribute's full name, a namespace wildcard `Ns.*` — types directly in `Ns`, so
-`System.ComponentModel.DataAnnotations.*` does not reach Entity Framework's `.Schema` attributes — or `*`.
-The defaults are `System.ComponentModel.DataAnnotations.*`, `DescriptionAttribute`,
-`DefaultValueAttribute` and `DisplayNameAttribute` from `System.ComponentModel`, and
-`System.ObsoleteAttribute`; they are part of the output contract. Whatever the selection says,
-`System.Runtime.CompilerServices.*`, `System.Text.Json.Serialization.*` (already reflected in the schema),
-`DotNetSchema.*` and the marker attribute are never exposed. `DecoratorsDeny = ["*"]` switches the
-feature off.
+**Selection.** An ordered list of `DecoratorRule(Pattern, Include)`: `DefaultDecorators`, then
+`DecoratorRules` (the build's `DotNetSchemaDecorator` items, in the order written). For each attribute the
+**last** rule whose pattern matches its full name decides; no match means it is left out. In a pattern `*`
+matches any run of characters, dots included, so `Ns.*` reaches sub-namespaces and `Ns.*.*` is exactly them;
+everything else is literal and ordinal. `(*, exclude)` clears everything before it.
+
+The defaults — include `System.ComponentModel.DataAnnotations.*`, exclude
+`System.ComponentModel.DataAnnotations.*.*`, include `DefaultValueAttribute`, `DescriptionAttribute` and
+`DisplayNameAttribute` from `System.ComponentModel` and `System.ObsoleteAttribute` — are part of the output
+contract. The sub-namespace exclusion is what keeps Entity Framework's `DataAnnotations.Schema` attributes out
+now that `*` is recursive. Whatever the rules say, attributes in the namespaces
+`System.Runtime.CompilerServices`, `System.Text.Json.Serialization` (already reflected in the schema) and
+`DotNetSchema`, and the marker attribute, are never exposed. Those are matched by exact namespace, not by the
+rules' wildcard, which as a prefix would also catch every consumer namespace beginning with `DotNetSchema`.
 
 **Standard keywords.** A selected well-known attribute is also translated, and only a selected one — denying
 `[Range]` removes its bounds along with its entry:
@@ -216,7 +221,7 @@ decorators are left out.
 
 These keywords describe validation the model *declares*. System.Text.Json enforces none of it — it writes
 a `[Range(1, 10)]` property holding `42` without complaint — so they are one of the two places the schema
-says more than "what System.Text.Json writes" (the other is [type mappings](#type-mappings)). Deny the attribute if a schema consumer must accept everything the
+says more than "what System.Text.Json writes" (the other is [type mappings](#type-mappings)). Exclude the attribute if a schema consumer must accept everything the
 serialiser can produce.
 
 `x-decorators` is a vendor keyword: Draft 2020-12 treats it as an annotation, but a strict validator (Ajv's
