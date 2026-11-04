@@ -4,6 +4,8 @@ updates:
   # Package updates, grouped into a single pull request per week
   - package-ecosystem: nuget
     directory: /
+    # `develop` is the work-in-progress trunk; `master` only receives releases
+    target-branch: develop
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
@@ -18,5 +20,6 @@ updates:
 
   - package-ecosystem: github-actions
     directory: /
+    target-branch: develop
     schedule:
       interval: weekly

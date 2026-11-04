@@ -17,7 +17,7 @@ A version published to nuget.org can never be overwritten or deleted — only un
   ```
 
 - [ ] **Every golden digest change since the last release was intended**, and its commit message says why — `git log v<previous>..develop -- tests/DotNetSchema.Generator.Tests/JsonSchemaGeneratorTests.Goldens.cs`.
-- [ ] **The documentation matches the code** — per [Keeping this file and the READMEs current](./AGENTS.md#keeping-this-file-and-the-readmes-current): the property table ("Configuring it") and the Diagnostics table in `src/DotNetSchema/README.md`, the mapping table in the Generator README, and the Arguments table in the Tool README.
+- [ ] **The documentation matches the code** — per [Keeping this file and the READMEs current](./AGENTS.md#keeping-this-file-and-the-readmes-current): the property table ("Configuring it") and the Diagnostics table in `src/DotNetSchema/README.md`, the mapping table in the Generator README, and the Arguments table in the Tool README; and the READMEs' C# samples compile.
 - [ ] **The new version has been chosen** following semver, and is not in the list nuget.org already has — including unlisted versions:
 
   ```sh
@@ -25,6 +25,7 @@ A version published to nuget.org can never be overwritten or deleted — only un
   ```
 
   (A `404` means nothing has been published yet.) A change to the schema the package produces for unchanged models is a breaking change for anyone generating code from it.
+
 - [ ] **The package contents are right** — after packing (step 2 below), `unzip -l artifacts/packages/DotNetSchema.<version>.nupkg` lists `lib/net10.0/DotNetSchema.dll`, `buildTransitive/DotNetSchema.{props,targets}`, `tools/net10.0/any/` with `DotNetSchema.Tool.dll`, `DotNetSchema.Generator.dll`, `System.Reflection.MetadataLoadContext.dll`, `DotNetSchema.Tool.runtimeconfig.json` and `.deps.json`, plus `README.md`, `LICENSE.md` and `icon.png` — and nothing from `tests/` or `samples/`. A `DotNetSchema.<version>.snupkg` sits next to it. `unzip -p … DotNetSchema.nuspec` shows the right version, license, repository URL, project URL, tags, icon and readme.
 - [ ] **The packed package works for a consumer** — see [Consumer smoke test](#consumer-smoke-test) below. The ordinary build only ever exercises the in-repository path, so this is the only check of the packaged one.
 - [ ] **You have a valid nuget.org API key** with push rights to `DotNetSchema` (nuget.org → API Keys; scope it to the `DotNetSchema` glob). Keys expire — check the date.
@@ -33,7 +34,7 @@ A version published to nuget.org can never be overwritten or deleted — only un
 
 ### Consumer smoke test
 
-Restore the packed package into throwaway projects outside the repository: a model library that references the package, and a host that references the library and opts in. Use a private `NUGET_PACKAGES` folder — the global package cache keeps the first copy of a version it sees, so re-packing the same version would otherwise test a stale package.
+Restore the packed package into throwaway projects outside the repository: a model library that references the package, and a host that references the library and opts in. Use a private `NUGET_PACKAGES` folder — the global package cache keeps the first copy of a version it sees, so re-packing the same version would otherwise test a stale package. An agent running it uses its session scratch directory in place of `/tmp/dotnetschema-smoke` (see [WORKFLOW.md](./WORKFLOW.md) › "Working files").
 
 ```sh
 $ ./scripts/pack.sh -p:Version=<version>
@@ -98,6 +99,8 @@ It passes when:
 
 ## Packaging and publishing
 
+An agent following these steps asks for a yes before each commit, tag, push and publish, one at a time (see [WORKFLOW.md](./WORKFLOW.md) › "Outward actions").
+
 1. **Bump the version on `develop`.** Set `<Version>` in `src/DotNetSchema/DotNetSchema.csproj`, and every `Version="<old>"` snippet with it — `grep -rn 'Version="<old>"' --include=*.md --include=*.csproj .` finds them (root `README.md`, `src/DotNetSchema/README.md`, the comment in `samples/DotNetSchema.Sample.Models/DotNetSchema.Sample.Models.csproj`). Then commit and tag:
 
    ```sh
@@ -138,7 +141,7 @@ It passes when:
        --source https://api.nuget.org/v3/index.json
    ```
 
-   If symbol packages are enabled, `dotnet nuget push` picks up the `.snupkg` next to the `.nupkg` automatically.
+   `dotnet nuget push` picks up the `.snupkg` next to the `.nupkg` automatically.
 
 6. **Verify the release.** nuget.org validates and indexes a new version over several minutes. Once `curl -s https://api.nuget.org/v3-flatcontainer/dotnetschema/index.json` lists it, re-run the [consumer smoke test](#consumer-smoke-test) with the `local` source removed from `nuget.config`, so the package comes from nuget.org. Check that the version is listed on the [package page](https://www.nuget.org/packages/DotNetSchema/) and that the README renders on `https://www.nuget.org/packages/DotNetSchema/<version>` with working links.
 

@@ -3,10 +3,42 @@ bin/
 obj/
 .vs/
 *.user
+*.suo
+*.rsuser
+*.userprefs
 samples/DotNetSchema.Sample.Host/schemas/
 
 # Additional build artifacts
 artifacts/
+*.nupkg
+*.snupkg
+
+# Test results / coverage reports
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+coverage*.json
+coverage*.xml
+coverage*.info
+*.cobertura.xml
+
+# IDE/editor
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.sln.iml
+*.swp
+*.swo
+*.bak
+
+# Misc
+.env
+.env.*
+*.log
 
 # OS garbage
 Thumbs.db
@@ -18,3 +50,6 @@ $RECYCLE.BIN/
 # Explicitly omitted files
 *.gitignore.*
 *.gitignore/
+
+# repo skill working files
+/.workflow/.temp/
