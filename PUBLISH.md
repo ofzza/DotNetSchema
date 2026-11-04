@@ -1,6 +1,6 @@
 # Publishing
 
-How to release a new version of the [`DotNetSchema` package](https://www.nuget.org/packages/DotNetSchema/) to NuGet. Releases are cut from `develop` and published from `master`, following the branching model in [AGENTS.md](./AGENTS.md#branching).
+How to release a new version of the [`DotNetSchema` package](https://www.nuget.org/packages/DotNetSchema/) to NuGet. Releases are cut from `develop` and published from `master`, following the branching model in [WORKFLOW.custom.md](./WORKFLOW.custom.md) › "Branching".
 
 A version published to nuget.org can never be overwritten or deleted — only unlisted, and an unlisted version can still be restored by anyone who names it. Treat every push as permanent.
 

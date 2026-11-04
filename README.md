@@ -36,6 +36,7 @@ Full documentation: [src/DotNetSchema/README.md](src/DotNetSchema/README.md).
 | `samples/`                   | A model library + host pair showing the opt-in, a custom output path and type mappings |
 | `scripts/pack.sh`            | Packs into `artifacts/packages`                                                        |
 | `CONTRIBUTE.md`              | Contributor guide: reporting issues, workflow, branching, architecture and glossary    |
+| `WORKFLOW.md`                | The agent workflow; `WORKFLOW.custom.md` holds this project's own workflow rules       |
 | `PUBLISH.md`                 | Release checklists and the steps to publish to nuget.org                               |
 | `icon.png`                   | The package icon                                                                       |
 
