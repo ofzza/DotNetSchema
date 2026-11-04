@@ -42,16 +42,18 @@ Every project documents itself in its own `README.md`.
 
 Terms used across code, comments and documentation. Use them as defined here. A new concept is added to this list in the change that introduces it (an agent proposes it first, see [WORKFLOW.md](./WORKFLOW.md) › "Glossary").
 
-| Term          | Meaning                                                                                                                |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Model         | A `[DotNetSchema]`-marked record or class, exported as a definition in `$defs`.                                        |
-| Document      | One JSON Schema file the export writes; models are grouped into documents by the file name in `[DotNetSchema(...)]`.   |
-| Host          | The project that opts in with `DotNetSchemaGenerate=true` and gets the documents.                                      |
-| Metadata-only | Reading assemblies through `MetadataLoadContext`, so no consumer code runs.                                            |
-| Decorator     | An attribute exposed in `x-decorators` (and mapped to validation keywords), selected by `DotNetSchemaDecorator` rules. |
-| Type mapping  | A `DotNetSchemaType` item or `[DotNetSchemaType]` that emits a type inline as a scalar.                                |
-| Diagnostic    | A `DNS####` problem report, printed in MSBuild canonical form.                                                         |
-| Golden digest | The SHA-256 of a fixtures document, pinned in the tests to catch output changes.                                       |
+| Term            | Meaning                                                                                                                    |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Model           | A `[DotNetSchema]`-marked record or class, exported as a definition in `$defs`.                                            |
+| Document        | One JSON Schema file the export writes; models are grouped into documents by the file name in `[DotNetSchema(...)]`.       |
+| Host            | The project that opts in with `DotNetSchemaGenerate=true` and gets the documents.                                          |
+| Metadata-only   | Reading assemblies through `MetadataLoadContext`, so no consumer code runs.                                                |
+| Decorator       | An attribute exposed in `x-decorators` (and mapped to validation keywords), selected by `DotNetSchemaDecorator` rules.     |
+| Type mapping    | A `DotNetSchemaType` item or `[DotNetSchemaType]` that emits a type inline as a scalar.                                    |
+| Property format | A `[DotNetSchemaFormat]` on a property: the `format` and/or `pattern` of that property's values, never their `type`.       |
+| Enum style      | How an enum's member names travel with its values: `OneOfConstTitle`, `EnumWithNames` or `Enum` (`DotNetSchemaEnumStyle`). |
+| Diagnostic      | A `DNS####` problem report, printed in MSBuild canonical form.                                                             |
+| Golden digest   | The SHA-256 of a fixtures document, pinned in the tests to catch output changes.                                           |
 
 <!-- <@ofzza/repo-skill:contribute> Managed by the repo skill: this tag marks where its Workflow section starts. -->
 
