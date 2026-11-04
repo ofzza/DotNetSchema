@@ -25,3 +25,4 @@ _Nothing._
 - 2026-11-04: specification approved ("Approve").
 - 2026-11-04: plan Segment 1 (Baseline) approved ("Approve").
 - 2026-11-04: Glossary terms "Property format" and "Enum style" added to `CONTRIBUTE.md`.
+- 2026-11-04: documentation clean-up (plan approved in plan mode): `AGENTS.md` points into `SPEC.md` instead of restating it; stale facts fixed in `AGENTS.md`; duplicates trimmed from `README.md`, `CONTRIBUTE.md` and `src/DotNetSchema/README.md`. A stop (Prettier on `AGENTS.md` without a pre-format copy) was reported and cleared ("go on").

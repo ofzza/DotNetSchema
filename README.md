@@ -35,7 +35,7 @@ Full documentation: [src/DotNetSchema/README.md](src/DotNetSchema/README.md).
 | `tests/`                     | Generator tests and the fixture models they run over                                   |
 | `samples/`                   | A model library + host pair showing the opt-in, a custom output path and type mappings |
 | `scripts/pack.sh`            | Packs into `artifacts/packages`                                                        |
-| `CONTRIBUTE.md`              | Contributor guide: reporting issues, workflow, branching, architecture and glossary    |
+| `CONTRIBUTE.md`              | Contributor guide: reporting issues, branching, glossary and workflow                  |
 | `WORKFLOW.md`                | The agent workflow; `WORKFLOW.custom.md` holds this project's own workflow rules       |
 | `PUBLISH.md`                 | Release checklists and the steps to publish to nuget.org                               |
 | `icon.png`                   | The package icon                                                                       |
@@ -45,8 +45,6 @@ dotnet build DotNetSchema.slnx
 dotnet test DotNetSchema.slnx
 ./scripts/pack.sh
 ```
-
-GitHub Actions runs restore, build, test and pack on every pull request targeting, and every push to, `master` or `develop`, on both Ubuntu and Windows.
 
 For reporting issues, contribution workflow and branching, see [CONTRIBUTE.md](./CONTRIBUTE.md).
 For releasing a version, see [PUBLISH.md](./PUBLISH.md).

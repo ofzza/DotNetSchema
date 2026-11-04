@@ -54,11 +54,11 @@ project it references, directly or transitively**, and writes the documents next
 Projects that do not set `DotNetSchemaGenerate` — your model libraries, typically — export nothing. They
 only carry the attribute.
 
-| Layout | What to do |
-| --- | --- |
-| Models and host in one project | `PackageReference` + `DotNetSchemaGenerate=true` in that project. |
+| Layout                                  | What to do                                                                  |
+| --------------------------------------- | --------------------------------------------------------------------------- |
+| Models and host in one project          | `PackageReference` + `DotNetSchemaGenerate=true` in that project.           |
 | Models in a library, host references it | `PackageReference` in the library; `DotNetSchemaGenerate=true` in the host. |
-| Models spread over several libraries | Same: the host scans its whole project-reference closure. |
+| Models spread over several libraries    | Same: the host scans its whole project-reference closure.                   |
 
 Models that reach the host as **packages** rather than projects are not scanned.
 
@@ -66,24 +66,24 @@ Models that reach the host as **packages** rather than projects are not scanned.
 
 Every one of these is an ordinary MSBuild property, set in the host `.csproj` (or a `Directory.Build.props`).
 
-| Property | Default | What it does |
-| --- | --- | --- |
-| `DotNetSchemaGenerate` | `false` | Set `true` in the project that should produce the documents. |
-| `DotNetSchemaOutputPath` | `$(OutDir)` | Directory the documents are written to. A relative path is resolved against the project directory. |
-| `DotNetSchemaDefaultFileName` | `$(AssemblyName).schema.json` | Document that a bare `[DotNetSchema]` exports to. |
-| `DotNetSchemaScanProjectReferences` | `true` | Set `false` to export only this project's own marked types. |
-| `DotNetSchemaIncludeInPublish` | `true` | Whether the documents are also copied to `$(PublishDir)`. |
-| `DotNetSchemaFailOnEmpty` | `false` | Fail the build when nothing is marked. Worth turning on in CI. |
-| `DotNetSchemaEnumStyle` | `OneOfConstTitle` | How enum values carry their member names: `OneOfConstTitle` (a `oneOf` of titled constants, standard), `EnumWithNames` (`enum` plus the `x-enumNames` vendor keyword) or `Enum` (values only). |
-| `DotNetSchemaToolPath` | *(empty)* | Escape hatch: run a specific prebuilt export tool. |
+| Property                            | Default                       | What it does                                                                                                                                                                                   |
+| ----------------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DotNetSchemaGenerate`              | `false`                       | Set `true` in the project that should produce the documents.                                                                                                                                   |
+| `DotNetSchemaOutputPath`            | `$(OutDir)`                   | Directory the documents are written to. A relative path is resolved against the project directory.                                                                                             |
+| `DotNetSchemaDefaultFileName`       | `$(AssemblyName).schema.json` | Document that a bare `[DotNetSchema]` exports to.                                                                                                                                              |
+| `DotNetSchemaScanProjectReferences` | `true`                        | Set `false` to export only this project's own marked types.                                                                                                                                    |
+| `DotNetSchemaIncludeInPublish`      | `true`                        | Whether the documents are also copied to `$(PublishDir)`.                                                                                                                                      |
+| `DotNetSchemaFailOnEmpty`           | `false`                       | Fail the build when nothing is marked. Worth turning on in CI.                                                                                                                                 |
+| `DotNetSchemaEnumStyle`             | `OneOfConstTitle`             | How enum values carry their member names: `OneOfConstTitle` (a `oneOf` of titled constants, standard), `EnumWithNames` (`enum` plus the `x-enumNames` vendor keyword) or `Enum` (values only). |
+| `DotNetSchemaToolPath`              | _(empty)_                     | Escape hatch: run a specific prebuilt export tool.                                                                                                                                             |
 
 Single values are properties; lists are items, one element per entry, so they need no separator syntax and keep
 the order they were written in:
 
-| Item | What it does |
-| --- | --- |
+| Item                    | What it does                                                                                                            |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `DotNetSchemaDecorator` | An ordered rule choosing which attributes are exposed under `x-decorators`. See [Attributes](#attributes-x-decorators). |
-| `DotNetSchemaType` | Describes a type inline by a schema you declare. See [Custom type mappings](#custom-type-mappings). |
+| `DotNetSchemaType`      | Describes a type inline by a schema you declare. See [Custom type mappings](#custom-type-mappings).                     |
 
 For example, to keep the documents in the source tree where a front end can pick them up:
 
@@ -118,10 +118,12 @@ nothing is inlined except the framework's primitives and the types you [map](#cu
     "Person": {
       "type": "object",
       "properties": {
-        "role":   { "$ref": "#/$defs/PersonRole" },
-        "mentor": { "anyOf": [ { "$ref": "#/$defs/Person" }, { "type": "null" } ] }
+        "role": { "$ref": "#/$defs/PersonRole" },
+        "mentor": {
+          "anyOf": [{ "$ref": "#/$defs/Person" }, { "type": "null" }]
+        }
       },
-      "required": [ "role" ]
+      "required": ["role"]
     }
   }
 }
@@ -181,12 +183,12 @@ its full name decides** whether it is included; an attribute no rule matches is 
 name, in which `*` matches any run of characters — **dots included**, so a namespace pattern reaches its
 sub-namespaces too:
 
-| Pattern | Matches |
-| --- | --- |
-| `Ns.FooAttribute` | that attribute (a nested one is `Ns.Outer+FooAttribute`) |
-| `Ns.*` | everything in `Ns` and in every namespace below it |
-| `Ns.*.*` | only the namespaces below `Ns` — so `Ns.*` included, then `Ns.*.*` excluded, is "directly in `Ns`" |
-| `*` | everything — excluding it clears every rule before it |
+| Pattern           | Matches                                                                                            |
+| ----------------- | -------------------------------------------------------------------------------------------------- |
+| `Ns.FooAttribute` | that attribute (a nested one is `Ns.Outer+FooAttribute`)                                           |
+| `Ns.*`            | everything in `Ns` and in every namespace below it                                                 |
+| `Ns.*.*`          | only the namespaces below `Ns` — so `Ns.*` included, then `Ns.*.*` excluded, is "directly in `Ns`" |
+| `*`               | everything — excluding it clears every rule before it                                              |
 
 The default rules are, in order: include `System.ComponentModel.DataAnnotations.*`, exclude
 `System.ComponentModel.DataAnnotations.*.*` (keeping Entity Framework's `DataAnnotations.Schema` mapping
@@ -287,11 +289,11 @@ the framework's own primitives:
 </ItemGroup>
 ```
 
-| Field | Required | Meaning |
-| --- | --- | --- |
-| `Type` | yes | `string`, `number`, `integer` or `boolean`. |
-| `Format` | no | The `format` keyword: a registered one (`uuid`, `date-time`, `email`, …) or your own, which readers that do not know it treat as an annotation. |
-| `Pattern` | no | The `pattern` keyword, a regular expression; `string` only. Unanchored, as JSON Schema patterns are — add `^` and `$` to match the whole value. |
+| Field     | Required | Meaning                                                                                                                                         |
+| --------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Type`    | yes      | `string`, `number`, `integer` or `boolean`.                                                                                                     |
+| `Format`  | no       | The `format` keyword: a registered one (`uuid`, `date-time`, `email`, …) or your own, which readers that do not know it treat as an annotation. |
+| `Pattern` | no       | The `pattern` keyword, a regular expression; `string` only. Unanchored, as JSON Schema patterns are — add `^` and `$` to match the whole value. |
 
 **Precedence:** a `DotNetSchemaType` item, then `[DotNetSchemaType]` on the type, then the built-in mapping of
 the framework's primitives, then the type's shape. A project can therefore correct a library's declaration;
@@ -326,13 +328,13 @@ That fits the common case, and works best when you keep it that way:
 
 ### Warnings and errors
 
-| Code | Severity | What it means | What to do |
-| --- | --- | --- | --- |
-| `DNS0016` | error | A mapping is malformed — a `Type` that is not one of the four, a `Pattern` on a non-string type or one that is not a valid regular expression, or an item with no type name. It is ignored. | Fix the item or the attribute named in the message. |
-| `DNS0017` | warning | A `DotNetSchemaType` item matched no type any exported document reached. | Check the name: namespace, `+` for nested types, `` `N `` for generics. If the item is shared deliberately (say, from `Directory.Build.props`) and this project simply does not use the type, suppress it with `<MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);DNS0017</MSBuildWarningsAsMessages>`. |
-| `DNS0018` | error | A type marked `[DotNetSchema]` is also mapped. A document definition and an inline scalar cannot both be true. | Remove the mark or the mapping. |
-| `DNS0019` | warning | A type that would be an object definition is written by a `[JsonConverter]` (on the type, or on the property) and has no mapping. Its shape is unknown, so it is described by the empty schema `{}`, which accepts anything. | Declare what the converter writes, with `[DotNetSchemaType]` or a `DotNetSchemaType` item. |
-| `DNS0004` | error | A type of your own with a mapping that is not a `string` one is used as a dictionary key. Every JSON property name is a string, so only a string mapping can describe a key. (An enum or a framework primitive keeps its usual key form instead.) | Map the type as a `string` (with the pattern its keys match), or key the dictionary differently. |
+| Code      | Severity | What it means                                                                                                                                                                                                                                     | What to do                                                                                                                                                                                                                                                                                                    |
+| --------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DNS0016` | error    | A mapping is malformed — a `Type` that is not one of the four, a `Pattern` on a non-string type or one that is not a valid regular expression, or an item with no type name. It is ignored.                                                       | Fix the item or the attribute named in the message.                                                                                                                                                                                                                                                           |
+| `DNS0017` | warning  | A `DotNetSchemaType` item matched no type any exported document reached.                                                                                                                                                                          | Check the name: namespace, `+` for nested types, `` `N `` for generics. If the item is shared deliberately (say, from `Directory.Build.props`) and this project simply does not use the type, suppress it with `<MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);DNS0017</MSBuildWarningsAsMessages>`. |
+| `DNS0018` | error    | A type marked `[DotNetSchema]` is also mapped. A document definition and an inline scalar cannot both be true.                                                                                                                                    | Remove the mark or the mapping.                                                                                                                                                                                                                                                                               |
+| `DNS0019` | warning  | A type that would be an object definition is written by a `[JsonConverter]` (on the type, or on the property) and has no mapping. Its shape is unknown, so it is described by the empty schema `{}`, which accepts anything.                      | Declare what the converter writes, with `[DotNetSchemaType]` or a `DotNetSchemaType` item.                                                                                                                                                                                                                    |
+| `DNS0004` | error    | A type of your own with a mapping that is not a `string` one is used as a dictionary key. Every JSON property name is a string, so only a string mapping can describe a key. (An enum or a framework primitive keeps its usual key form instead.) | Map the type as a `string` (with the pattern its keys match), or key the dictionary differently.                                                                                                                                                                                                              |
 
 `DNS0019` only sees converters named by `[JsonConverter]`. A converter registered in `JsonSerializerOptions`
 leaves no trace in the assembly, so a type relying on one is described by its members, without a warning —
@@ -341,7 +343,7 @@ map it.
 ## Property formats
 
 A type mapping describes a type everywhere it appears. Often the type is fine — a `string` is a string — and
-what is missing is what kind of string *this property* holds. `[DotNetSchemaFormat]` on the property adds a
+what is missing is what kind of string _this property_ holds. `[DotNetSchemaFormat]` on the property adds a
 `format`, a `pattern`, or both, without changing its `type`:
 
 ```csharp
@@ -377,7 +379,7 @@ public sealed record Book
   a `Guid`'s `uuid`, a `TimeOnly`'s pattern, a mapped type's declaration — for this property only, and only
   the keyword it states: a format alone keeps the type's pattern. An `[EmailAddress]`, `[Url]` or
   `[RegularExpression]` on the same property that would set a different value gives way to it (`DNS0015`);
-  one that sets the *other* keyword combines with it.
+  one that sets the _other_ keyword combines with it.
 - **On a collection it describes the values**, not the collection: the elements of an array or list, the
   values of a dictionary (never its keys), at any depth — `IReadOnlyList<IReadOnlyList<string>>` included.
   This differs from `[MaxLength]` on an array, which counts its elements.
@@ -387,74 +389,47 @@ public sealed record Book
 - **On a positional record** it may be written on the parameter, without a `property:` target.
 - It is never listed in `x-decorators`: the keywords already say everything it does.
 
-| Code | Severity | What it means | What to do |
-| --- | --- | --- | --- |
-| `DNS0020` | error | The attribute is malformed — it states neither a format nor a pattern, its format is empty, or its pattern is not a valid regular expression. It is ignored. | Fix the attribute named in the message. |
-| `DNS0021` | warning | The attribute cannot apply where it is: the property's values are models or enums, or it has a `Pattern` and the values are not strings. It is ignored. | Remove it, or describe the type instead with `[DotNetSchemaType]`. |
+| Code      | Severity | What it means                                                                                                                                                | What to do                                                         |
+| --------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| `DNS0020` | error    | The attribute is malformed — it states neither a format nor a pattern, its format is empty, or its pattern is not a valid regular expression. It is ignored. | Fix the attribute named in the message.                            |
+| `DNS0021` | warning  | The attribute cannot apply where it is: the property's values are models or enums, or it has a `Pattern` and the values are not strings. It is ignored.      | Remove it, or describe the type instead with `[DotNetSchemaType]`. |
 
 ## Diagnostics
 
 Reported in MSBuild's canonical form, so they arrive as ordinary build errors and warnings.
 
-| Code | Severity | Meaning |
-| --- | --- | --- |
-| `DNS0001` | error | A marked type is not a concrete, non-generic class, record or struct. |
-| `DNS0002` | error | A property's type has no JSON Schema mapping. |
-| `DNS0003` | error | A generic type appeared in the closure. |
-| `DNS0004` | error | A dictionary key System.Text.Json cannot write as a property name. |
-| `DNS0005` | warning | Two types shared a short name; both definitions were qualified. |
-| `DNS0006` | warning | Two properties of one type serialise under the same name. |
-| `DNS0007` | error | The attribute names something that is not a bare `.json` file name. |
-| `DNS0009` | warning | A property's enum converter disagrees with the enum type's; its schema is inlined. |
-| `DNS0010` | warning | An assembly yielded types that could not be loaded; the rest were scanned. |
-| `DNS0011` | warning | Reference-typed members with no nullability metadata; treated as non-nullable. |
-| `DNS0012` | warning | A dictionary keyed by a floating-point type. |
-| `DNS0014` | warning | A type's or property's attributes could not be read; its decorators were left out. |
-| `DNS0015` | warning | A selected attribute's standard keyword does not fit the property (say, `[Range]` on a string); it stays in `x-decorators` only. |
-| `DNS0016` | error | A type mapping is malformed and was ignored. See [Custom type mappings](#warnings-and-errors). |
-| `DNS0017` | warning | A `DotNetSchemaType` item matched no type any exported document reached. |
-| `DNS0018` | error | A type is both marked for export and mapped. |
-| `DNS0019` | warning | A model position is written by a `[JsonConverter]` and has no mapping; it is described by `{}`. |
-| `DNS0020` | error | A `[DotNetSchemaFormat]` is malformed and was ignored. See [Property formats](#property-formats). |
-| `DNS0021` | warning | A `[DotNetSchemaFormat]` is on a property whose values take no format or pattern; it was ignored. |
-| `DNS0000` | error | The tool itself failed; the message carries the exception. |
-| `DNS0013` | error | Nothing was marked, and `DotNetSchemaFailOnEmpty` is set. |
-| `DNS1001` | error | The export tool could not be located. Raised by the targets, not the tool. |
+| Code      | Severity | Meaning                                                                                                                          |
+| --------- | -------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `DNS0001` | error    | A marked type is not a concrete, non-generic class, record or struct.                                                            |
+| `DNS0002` | error    | A property's type has no JSON Schema mapping.                                                                                    |
+| `DNS0003` | error    | A generic type appeared in the closure.                                                                                          |
+| `DNS0004` | error    | A dictionary key System.Text.Json cannot write as a property name.                                                               |
+| `DNS0005` | warning  | Two types shared a short name; both definitions were qualified.                                                                  |
+| `DNS0006` | warning  | Two properties of one type serialise under the same name.                                                                        |
+| `DNS0007` | error    | The attribute names something that is not a bare `.json` file name.                                                              |
+| `DNS0009` | warning  | A property's enum converter disagrees with the enum type's; its schema is inlined.                                               |
+| `DNS0010` | warning  | An assembly yielded types that could not be loaded; the rest were scanned.                                                       |
+| `DNS0011` | warning  | Reference-typed members with no nullability metadata; treated as non-nullable.                                                   |
+| `DNS0012` | warning  | A dictionary keyed by a floating-point type.                                                                                     |
+| `DNS0014` | warning  | A type's or property's attributes could not be read; its decorators were left out.                                               |
+| `DNS0015` | warning  | A selected attribute's standard keyword does not fit the property (say, `[Range]` on a string); it stays in `x-decorators` only. |
+| `DNS0016` | error    | A type mapping is malformed and was ignored. See [Custom type mappings](#warnings-and-errors).                                   |
+| `DNS0017` | warning  | A `DotNetSchemaType` item matched no type any exported document reached.                                                         |
+| `DNS0018` | error    | A type is both marked for export and mapped.                                                                                     |
+| `DNS0019` | warning  | A model position is written by a `[JsonConverter]` and has no mapping; it is described by `{}`.                                  |
+| `DNS0020` | error    | A `[DotNetSchemaFormat]` is malformed and was ignored. See [Property formats](#property-formats).                                |
+| `DNS0021` | warning  | A `[DotNetSchemaFormat]` is on a property whose values take no format or pattern; it was ignored.                                |
+| `DNS0000` | error    | The tool itself failed; the message carries the exception.                                                                       |
+| `DNS0013` | error    | Nothing was marked, and `DotNetSchemaFailOnEmpty` is set.                                                                        |
+| `DNS1001` | error    | The export tool could not be located. Raised by the targets, not the tool.                                                       |
 
 An error withholds the document it concerns and leaves the other documents alone.
 
-## Developing in this repository
+## Contributing and releasing
 
-MSBuild only auto-imports a package's build targets for a `PackageReference`, never for a
-`ProjectReference`, so projects inside this repository import them by hand:
-
-```xml
-<ItemGroup>
-  <ProjectReference Include="..\..\src\DotNetSchema\DotNetSchema.csproj" />
-</ItemGroup>
-
-<Import Project="..\..\src\DotNetSchema\buildTransitive\DotNetSchema.targets" />
-```
-
-On that path there is no pre-built tool, so the targets add a build-only `ProjectReference` to
-`DotNetSchema.Tool` and build it as part of the consumer's build. A clean clone builds with a plain
-`dotnet build DotNetSchema.slnx`. The samples (`samples/DotNetSchema.Sample.Models` and
-`samples/DotNetSchema.Sample.Host`) are the worked example of the library/host split.
-
-## Releasing the package
-
-`./scripts/pack.sh` packs it into `artifacts/packages` (extra arguments go to `dotnet pack`, e.g.
-`-p:Version=0.2.0`). The package carries the attribute under `lib/`, the build integration under
-`buildTransitive/`, and the export tool, pre-published, under `tools/net10.0/any/`.
-
-The ordinary build never exercises the packaged path, so check it by hand before releasing:
-
-1. `./scripts/pack.sh`
-2. In a scratch directory outside the repository, add a `nuget.config` pointing at `artifacts/packages`,
-   a `net10.0` library with a `PackageReference` to `DotNetSchema` and one `[DotNetSchema]` record, and
-   a host project that references the library and sets `DotNetSchemaGenerate` to `true`.
-3. `dotnet build` the host. `<Host>.schema.json` must appear in the host's `bin/`, nothing in the
-   library's, and there must be no `<Import>` line anywhere.
+Building from source, the in-repository setup and the release process are described in the repository's
+[CONTRIBUTE.md](https://github.com/ofzza/DotNetSchema/blob/master/CONTRIBUTE.md) and
+[PUBLISH.md](https://github.com/ofzza/DotNetSchema/blob/master/PUBLISH.md).
 
 ## Layout
 
@@ -470,11 +445,11 @@ DotNetSchema/
   README.md
 ```
 
-| Project | What it is |
-| --- | --- |
-| **`DotNetSchema`** | This one. The attribute, the MSBuild integration and the packaging. No dependencies; the only assembly a consumer references. |
-| [`DotNetSchema.Generator`](https://github.com/ofzza/DotNetSchema/blob/master/src/DotNetSchema.Generator/README.md) | The engine. Reads assemblies, produces documents. |
-| [`DotNetSchema.Tool`](https://github.com/ofzza/DotNetSchema/blob/master/src/DotNetSchema.Tool/README.md) | The command-line shell the build runs. |
+| Project                                                                                                            | What it is                                                                                                                    |
+| ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| **`DotNetSchema`**                                                                                                 | This one. The attribute, the MSBuild integration and the packaging. No dependencies; the only assembly a consumer references. |
+| [`DotNetSchema.Generator`](https://github.com/ofzza/DotNetSchema/blob/master/src/DotNetSchema.Generator/README.md) | The engine. Reads assemblies, produces documents.                                                                             |
+| [`DotNetSchema.Tool`](https://github.com/ofzza/DotNetSchema/blob/master/src/DotNetSchema.Tool/README.md)           | The command-line shell the build runs.                                                                                        |
 
 ## Tests
 

@@ -20,27 +20,11 @@ This repository uses two long-lived branches:
 
 Larger work, or any work you want reviewed, goes in its own feature branch, created from `develop`. Once it is pushed, request a merge into `develop` with a pull request titled after its issue (`Issue #NN, Copied issue title`, see `.github/pull_request_template.md`).
 
-Before committing or requesting a merge (your agent does this for you, see [Workflow](#workflow)), make sure `dotnet build DotNetSchema.slnx` and `dotnet test DotNetSchema.slnx` pass locally, and that `README.md`, `CONTRIBUTE.md`, `AGENTS.md` and the affected projects' READMEs reflect the change. A change that moves the golden digests says why in its commit message.
+Before committing or requesting a merge, make sure `dotnet build DotNetSchema.slnx` and `dotnet test DotNetSchema.slnx` pass locally, and that the documentation reflects the change (your agent does both for you, see [Workflow](#workflow)).
 
-## Architecture and glossary
+## Glossary
 
-### Project structure
-
-```
-DotNetSchema.slnx                    Solution
-src/DotNetSchema/                    The package: attribute and buildTransitive/ MSBuild integration
-src/DotNetSchema.Generator/          The engine: assemblies in, schema documents and diagnostics out
-src/DotNetSchema.Tool/               The console shell the build runs
-tests/DotNetSchema.Fixtures/         The fixture model graph every test runs over
-tests/DotNetSchema.Generator.Tests/  Generator tests
-samples/                             A model library + host pair
-```
-
-Every project documents itself in its own `README.md`.
-
-### Glossary
-
-Terms used across code, comments and documentation. Use them as defined here. A new concept is added to this list in the change that introduces it (an agent proposes it first, see [WORKFLOW.md](./WORKFLOW.md) › "Glossary").
+Terms used across code, comments and documentation. Use them as defined here. (For where things live, see the path table in [README.md](./README.md).) A new concept is added to this list in the change that introduces it (an agent proposes it first, see [WORKFLOW.md](./WORKFLOW.md) › "Glossary").
 
 | Term            | Meaning                                                                                                                    |
 | --------------- | -------------------------------------------------------------------------------------------------------------------------- |
