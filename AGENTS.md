@@ -158,7 +158,7 @@ There is no `.editorconfig` in this repo; follow the surrounding code.
 - **A project not listed in `DotNetSchema.slnx` is invisible to CI.** `dotnet build` / `test` run against the solution, so add every new project to it (`dotnet sln DotNetSchema.slnx add <path> --solution-folder <src|tests|samples>`).
 - **The global NuGet cache keeps the first copy of a version it sees.** Re-packing the same version and restoring it again silently uses the stale copy, which is why the smoke test in `PUBLISH.md` uses a private `NUGET_PACKAGES`.
 - `.gitignore` ignores `.vscode/` but re-includes `settings.json`, `tasks.json`, `launch.json` and `extensions.json`. Any other `.vscode/` file must be re-included there before it can be committed.
-- **`*.gitignore.*` files and `*.gitignore/` directories are local-only** (e.g. `TODO.gitignore.md`) and ignored by `.gitignore` — never commit them.
+- **`*.gitignore.*` files and `*.gitignore/` directories are local-only** (e.g. `TODO.gitignore.md`) and ignored by `.gitignore` — never commit them. They are for your own local notes: an agent's working files still go under `./.workflow/.temp/<topic>/` (see [WORKFLOW.md](./WORKFLOW.md) › "Working files").
 
 ## Continuous integration
 

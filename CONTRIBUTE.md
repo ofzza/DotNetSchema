@@ -40,7 +40,7 @@ Every project documents itself in its own `README.md`.
 
 ### Glossary
 
-Terms used across code, comments and documentation. Use them as defined here, and add every new concept to this list.
+Terms used across code, comments and documentation. Use them as defined here. A new concept is added to this list in the change that introduces it (an agent proposes it first, see [WORKFLOW.md](./WORKFLOW.md) › "Glossary").
 
 | Term          | Meaning                                                                                                                |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------- |
