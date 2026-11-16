@@ -25,7 +25,8 @@ public sealed record Order(Guid Id, IReadOnlyList<OrderLine> Lines);
 Requires the .NET 10 SDK for the host build, and `net10.0` or later in every project that references the
 package. Published on NuGet as [`DotNetSchema`](https://www.nuget.org/packages/DotNetSchema/).
 
-Full documentation: [src/DotNetSchema/README.md](src/DotNetSchema/README.md).
+Full documentation: [src/DotNetSchema/README.md](src/DotNetSchema/README.md), also browsable in this repository's
+showroom, built by [`showroom`](https://www.npmjs.com/package/@ofzza/showroom): [ofzza.github.io/DotNetSchema](https://ofzza.github.io/DotNetSchema/).
 
 | Path                         |                                                                                        |
 | ---------------------------- | -------------------------------------------------------------------------------------- |
@@ -38,12 +39,14 @@ Full documentation: [src/DotNetSchema/README.md](src/DotNetSchema/README.md).
 | `CONTRIBUTE.md`              | Contributor guide: reporting issues, branching, glossary and workflow                  |
 | `WORKFLOW.md`                | The agent workflow; `WORKFLOW.custom.md` holds this project's own workflow rules       |
 | `PUBLISH.md`                 | Release checklists and the steps to publish to nuget.org                               |
+| `showroom.json`              | Configuration of the showroom (the documentation site), published from `master`        |
 | `icon.png`                   | The package icon                                                                       |
 
 ```bash
 dotnet build DotNetSchema.slnx
 dotnet test DotNetSchema.slnx
 ./scripts/pack.sh
+npx --package @ofzza/showroom showroom serve   # previews the showroom; needs Node.js 22 or later
 ```
 
 For reporting issues, contribution workflow and branching, see [CONTRIBUTE.md](./CONTRIBUTE.md).

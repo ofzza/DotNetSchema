@@ -46,6 +46,17 @@ jobs:
       - run: ./scripts/pack.sh
         shell: bash
 
+      # Checks the showroom (showroom.json and the documentation's links) before a push to master publishes it; the
+      # documentation is the same on both legs, so ubuntu alone checks it. Keep the version in step with
+      # SHOWROOM_VERSION in showroom.yml
+      - uses: actions/setup-node@v7
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          node-version: 24
+
+      - run: npx --yes --package @ofzza/showroom@0.1.0-alpha.2 showroom check --showcases --quiet
+        if: matrix.os == 'ubuntu-latest'
+
       - uses: actions/upload-artifact@v7
         if: matrix.os == 'ubuntu-latest'
         with:

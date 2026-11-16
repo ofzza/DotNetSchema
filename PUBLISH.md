@@ -4,6 +4,15 @@ How to release a new version of the [`DotNetSchema` package](https://www.nuget.o
 
 A version published to nuget.org can never be overwritten or deleted — only unlisted, and an unlisted version can still be restored by anyone who names it. Treat every push as permanent.
 
+## Showroom on GitHub Pages
+
+This repository's showroom ([ofzza.github.io/DotNetSchema](https://ofzza.github.io/DotNetSchema/)), its documentation as a site, is built by [`showroom`](https://www.npmjs.com/package/@ofzza/showroom) from `showroom.json` (its `dotnet` stack adapter, reading the project information from `src/DotNetSchema/DotNetSchema.csproj`) and published to GitHub Pages by `.github/workflows/showroom.yml`, on every push to `master`, so it shows the latest release. Set it up once, in the GitHub repository's settings:
+
+- [ ] **Settings › Pages › Build and deployment › Source** is "GitHub Actions".
+- [ ] **Settings › Environments › `github-pages` › Deployment branches and tags** allows `master`. GitHub only lets the default branch deploy to this environment, so without it the deployment fails with "Branch "master" is not allowed to deploy to github-pages due to environment protection rules". The environment appears once Pages is set up.
+
+The workflow runs `showroom` through `npx`, pinned by `SHOWROOM_VERSION` in `showroom.yml`; there is no `package.json` for Dependabot to bump it in, so bump it by hand, together with the version the showroom check in `ci.yml` uses.
+
 ## Before each publish
 
 - [ ] **`develop` is clean and in sync with `origin`** — `git status` shows nothing to commit, and `git pull` brings in nothing new.
@@ -18,6 +27,7 @@ A version published to nuget.org can never be overwritten or deleted — only un
 
 - [ ] **Every golden digest change since the last release was intended**, and its commit message says why — `git log v<previous>..develop -- tests/DotNetSchema.Generator.Tests/JsonSchemaGeneratorTests.Goldens.cs`.
 - [ ] **The documentation matches the code** — per [Keeping this file and the READMEs current](./AGENTS.md#keeping-this-file-and-the-readmes-current): the property table ("Configuring it") and the Diagnostics table in `src/DotNetSchema/README.md`, the mapping table in the Generator README, and the Arguments table in the Tool README; and the READMEs' C# samples compile.
+- [ ] **The showroom builds** — `npx --package @ofzza/showroom showroom check --showcases --quiet` reports no issues (its configuration and the documentation's links).
 - [ ] **The new version has been chosen** following semver, and is not in the list nuget.org already has — including unlisted versions:
 
   ```sh
@@ -143,7 +153,7 @@ An agent following these steps asks for a yes before each commit, tag, push and 
 
    `dotnet nuget push` picks up the `.snupkg` next to the `.nupkg` automatically.
 
-6. **Verify the release.** nuget.org validates and indexes a new version over several minutes. Once `curl -s https://api.nuget.org/v3-flatcontainer/dotnetschema/index.json` lists it, re-run the [consumer smoke test](#consumer-smoke-test) with the `local` source removed from `nuget.config`, so the package comes from nuget.org. Check that the version is listed on the [package page](https://www.nuget.org/packages/DotNetSchema/) and that the README renders on `https://www.nuget.org/packages/DotNetSchema/<version>` with working links.
+6. **Verify the release.** nuget.org validates and indexes a new version over several minutes. Once `curl -s https://api.nuget.org/v3-flatcontainer/dotnetschema/index.json` lists it, re-run the [consumer smoke test](#consumer-smoke-test) with the `local` source removed from `nuget.config`, so the package comes from nuget.org. Check that the version is listed on the [package page](https://www.nuget.org/packages/DotNetSchema/) and that the README renders on `https://www.nuget.org/packages/DotNetSchema/<version>` with working links. The push to `master` also published the showroom: check that the `Showroom` workflow run passed, and that [ofzza.github.io/DotNetSchema](https://ofzza.github.io/DotNetSchema/) shows the new version (see [Showroom on GitHub Pages](#showroom-on-github-pages)).
 
 7. **Switch back to `develop`** to continue work:
 

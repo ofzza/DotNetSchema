@@ -172,7 +172,8 @@ All printed in MSBuild canonical form, so `Exec` promotes them to build errors a
 ### Quality and process
 
 - Tests: xUnit v3; one `sealed partial` `JsonSchemaGeneratorTests`, one file per contract; every tested shape lives in `DotNetSchema.Fixtures` (never declared in a test); one test per `DNS` code (`DNS0010`, `DNS0011`, `DNS0014` knowingly untested); golden digests pin the fixtures documents; the hand-rolled `JsonSchemaValidator` covers exactly the emitted keywords; a real fixture graph must validate against its generated schema; fixtures deterministic (`StableRandom`, invariant culture, path-derived seeds).
-- CI (`.github/workflows/ci.yml`): pull requests to and pushes on `master` / `develop`, `ubuntu-latest` + `windows-latest`, restore → Release build → test → pack.
+- CI (`.github/workflows/ci.yml`): pull requests to and pushes on `master` / `develop`, `ubuntu-latest` + `windows-latest`, restore → Release build → test → pack, plus a `showroom check` on ubuntu.
+- Showroom (`.github/workflows/showroom.yml`): on every push to `master`, builds the documentation site with `showroom` (`@ofzza/showroom`, `dotnet` stack adapter, `showroom.json`) and publishes it to GitHub Pages.
 - Releases follow `PUBLISH.md`: checklists, consumer smoke test of the packed package, version bump, tag, fast-forward `master`, `dotnet nuget push`. Branching follows `WORKFLOW.custom.md` › "Branching".
 - A schema change for unchanged models is a breaking change for consumers generating code from it (semver).
 

@@ -1,0 +1,6 @@
+{
+  "stack": "dotnet",
+  "project": "src/DotNetSchema/DotNetSchema.csproj",
+  "ignore": [".workflow/*"],
+  "documentation": ["/PUBLISH.md"]
+}

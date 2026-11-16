@@ -1,0 +1,49 @@
+name: Showroom
+
+# Builds this repository's showroom with `showroom` (@ofzza/showroom, its `dotnet` stack adapter, configured by
+# showroom.json), and publishes it to GitHub Pages, on every push to master (the latest release). This repository has no
+# package.json, so `showroom` is run through `npx`, pinned to one version: there is no lockfile to pin it, and Dependabot
+# doesn't see it, so bump SHOWROOM_VERSION by hand. Needs Settings › Pages › Source set to "GitHub Actions", and master
+# allowed to deploy to the github-pages environment (see PUBLISH.md)
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time, and never cancel one in progress
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  SHOWROOM_VERSION: 0.1.0-alpha.2
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # No `cache: npm`: there is no package-lock.json to key it on
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      # The `dotnet` stack adapter reads the project information from the csproj as XML, so no .NET SDK or build is
+      # needed; the documentation has no showcases that would need one either
+      - run: npx --yes @ofzza/showroom@${{ env.SHOWROOM_VERSION }} build
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: showroom
+
+      - id: deployment
+        uses: actions/deploy-pages@v5

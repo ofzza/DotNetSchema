@@ -53,3 +53,6 @@ $RECYCLE.BIN/
 
 # repo skill working files
 /.workflow/.temp/
+
+# showroom build output (npx @ofzza/showroom build)
+/showroom/
