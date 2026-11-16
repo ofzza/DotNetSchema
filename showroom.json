@@ -2,5 +2,19 @@
   "stack": "dotnet",
   "project": "src/DotNetSchema/DotNetSchema.csproj",
   "ignore": [".workflow/*"],
-  "documentation": ["/PUBLISH.md"]
+  "navigation": [
+    { "path": "/" },
+    {
+      "title": "Projects",
+      "items": [
+        { "title": "DotNetSchema", "path": "src/DotNetSchema/README.md" },
+        { "title": "DotNetSchema.Generator", "path": "src/DotNetSchema.Generator/README.md" },
+        { "title": "DotNetSchema.Tool", "path": "src/DotNetSchema.Tool/README.md" },
+        { "title": "DotNetSchema.Fixtures", "path": "tests/DotNetSchema.Fixtures/README.md" },
+        { "title": "DotNetSchema.Generator.Tests", "path": "tests/DotNetSchema.Generator.Tests/README.md" }
+      ]
+    },
+    { "path": "CONTRIBUTE.md" },
+    { "title": "License", "path": "LICENSE.md" }
+  ]
 }
