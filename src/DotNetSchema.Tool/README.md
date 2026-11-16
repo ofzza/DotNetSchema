@@ -4,6 +4,8 @@ The command-line shell the build runs. It turns MSBuild's arguments into a metad
 assemblies to [`DotNetSchema.Generator`](../DotNetSchema.Generator/README.md),
 and turns the result back into files and build diagnostics.
 
+See this page in the showroom, the documentation built by [`showroom`](https://www.npmjs.com/package/@ofzza/showroom): [ofzza.github.io/DotNetSchema/#/src/DotNetSchema.Tool/README.md](https://ofzza.github.io/DotNetSchema/#/src/DotNetSchema.Tool/README.md).
+
 Nobody invokes this by hand except when debugging; the build integration in
 [`DotNetSchema`](../DotNetSchema/README.md) does it.
 
@@ -17,17 +19,17 @@ Always passed in a response file. A full framework closure runs to well over a h
 exceeds the command-line length limit on Windows; one `--key=value` per line needs no quoting and never
 reaches a shell.
 
-| Argument | Repeatable | Meaning |
-| --- | --- | --- |
-| `--scan=<path>` | yes | An assembly to search for marked types. |
-| `--reference=<path>` | yes | An assembly needed to resolve what the scanned ones mention. |
-| `--output-directory=<path>` | no | Where documents are written. |
-| `--default-file-name=<name>` | no | Document a bare `[DotNetSchema]` targets. |
-| `--manifest=<path>` | no | File recording what was produced. |
-| `--fail-on-empty=true\|false` | no | Whether producing nothing is an error. |
-| `--enum-style=<style>` | no | `OneOfConstTitle` (default), `EnumWithNames` or `Enum`, ignoring case. Anything else, a number included, is `DNS0000`. |
-| `--decorator=<true\|false>\|<pattern>` | yes | One `DotNetSchemaDecorator` item: include or exclude the attributes matching a pattern. Kept in the order given, which is their meaning — the last matching rule wins. `Include` other than `true` / `false` (ignoring case), or no pattern, is `DNS0000`. |
-| `--type-mapping=<name>\|<type>\|<format>\|<pattern>` | yes | One `DotNetSchemaType` item: a type's full name and its declared inline schema. Empty fields are absent. Split into at most four parts, so the pattern, last, may contain `\|`. Validated by the generator (`DNS0016`), not here. |
+| Argument                                             | Repeatable | Meaning                                                                                                                                                                                                                                                    |
+| ---------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--scan=<path>`                                      | yes        | An assembly to search for marked types.                                                                                                                                                                                                                    |
+| `--reference=<path>`                                 | yes        | An assembly needed to resolve what the scanned ones mention.                                                                                                                                                                                               |
+| `--output-directory=<path>`                          | no         | Where documents are written.                                                                                                                                                                                                                               |
+| `--default-file-name=<name>`                         | no         | Document a bare `[DotNetSchema]` targets.                                                                                                                                                                                                                  |
+| `--manifest=<path>`                                  | no         | File recording what was produced.                                                                                                                                                                                                                          |
+| `--fail-on-empty=true\|false`                        | no         | Whether producing nothing is an error.                                                                                                                                                                                                                     |
+| `--enum-style=<style>`                               | no         | `OneOfConstTitle` (default), `EnumWithNames` or `Enum`, ignoring case. Anything else, a number included, is `DNS0000`.                                                                                                                                     |
+| `--decorator=<true\|false>\|<pattern>`               | yes        | One `DotNetSchemaDecorator` item: include or exclude the attributes matching a pattern. Kept in the order given, which is their meaning — the last matching rule wins. `Include` other than `true` / `false` (ignoring case), or no pattern, is `DNS0000`. |
+| `--type-mapping=<name>\|<type>\|<format>\|<pattern>` | yes        | One `DotNetSchemaType` item: a type's full name and its declared inline schema. Empty fields are absent. Split into at most four parts, so the pattern, last, may contain `\|`. Validated by the generator (`DNS0016`), not here.                          |
 
 A path containing `;` is not supported: MSBuild splits item lists on it long before the tool sees it. A
 decorator or type-mapping pattern may contain `;` (and `*`): the targets build each line with an item

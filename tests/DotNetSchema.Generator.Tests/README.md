@@ -2,6 +2,8 @@
 
 Tests for [`DotNetSchema.Generator`](../../src/DotNetSchema.Generator/README.md).
 
+See this page in the showroom, the documentation built by [`showroom`](https://www.npmjs.com/package/@ofzza/showroom): [ofzza.github.io/DotNetSchema/#/tests/DotNetSchema.Generator.Tests/README.md](https://ofzza.github.io/DotNetSchema/#/tests/DotNetSchema.Generator.Tests/README.md).
+
 ```bash
 dotnet test tests/DotNetSchema.Generator.Tests   # from the repository root
 ```
@@ -47,7 +49,7 @@ throw when they do. This test runs both and compares bytes, so the whole no-runt
 it. Look here first if it fails.
 
 **`ARealFixtureGraph_ValidatesAgainstTheSchemaGeneratedForIt`.** Everything else compares the schema
-against what this project *believes* System.Text.Json does. This serialises an actual fixture graph and
+against what this project _believes_ System.Text.Json does. This serialises an actual fixture graph and
 validates it against the document, so it compares the schema against what System.Text.Json actually did.
 
 `JsonSchemaValidator` is hand-rolled and deliberately narrow — it implements the keyword subset the
@@ -62,7 +64,7 @@ the passing assertions from being vacuous.
 Two kinds, and they answer different questions. `EachDocument_ReproducesItsGoldenDigest` pins each whole
 document by SHA-256, so drift anywhere lands somewhere. `ScalarRegister_ReproducesItsGoldenDefinition`
 and `Person_ReproducesItsGoldenSalientProperties` pin definitions verbatim, so drift in the parts that
-matter most says *what* moved.
+matter most says _what_ moved.
 
 The digests were produced by this generator over `DotNetSchema.Fixtures` as it stands, with
 `SchemaGenerationOptions.Default`. They depend on the fixtures schema, so a change there moves them too.

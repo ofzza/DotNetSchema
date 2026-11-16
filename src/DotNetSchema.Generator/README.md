@@ -3,6 +3,8 @@
 The engine behind [`DotNetSchema`](../DotNetSchema/README.md). Give it
 assemblies, get JSON Schema Draft 2020-12 documents.
 
+See this page in the showroom, the documentation built by [`showroom`](https://www.npmjs.com/package/@ofzza/showroom): [ofzza.github.io/DotNetSchema/#/src/DotNetSchema.Generator/README.md](https://ofzza.github.io/DotNetSchema/#/src/DotNetSchema.Generator/README.md).
+
 ```csharp
 var result = new JsonSchemaGenerator().Generate([typeof(School).Assembly]);
 
@@ -76,30 +78,30 @@ DotNetSchema.Generator/
 Checked against what the .NET 10 `System.Text.Json` converters actually write, not against what the
 keyword names suggest. Three rows marked ⚠ are places where the obvious answer would be false.
 
-| C# | Schema |
-| --- | --- |
-| `bool` | `{"type":"boolean"}` |
-| `sbyte` `byte` `short` `ushort` `int` `uint` | `{"type":"integer","minimum":…,"maximum":…}` |
-| `long` | `{"type":"integer"}` — no bounds |
-| `ulong` | `{"type":"integer","minimum":0}` — no upper bound |
-| `float` `double` `decimal` | `{"type":"number"}` |
-| `char` | `{"type":"string","minLength":1,"maxLength":1}` |
-| `string` | `{"type":"string"}` |
-| `Guid` | `{"type":"string","format":"uuid"}` |
-| `DateOnly` | `{"type":"string","format":"date"}` |
-| ⚠ `TimeOnly` | a pattern. Written as `hh:mm:ss[.fffffff]` with **no offset**, so it does not satisfy RFC 3339 `full-time` and `format: "time"` would be false. |
-| ⚠ `TimeSpan` | a pattern. Written as `[-][d.]hh:mm:ss[.fffffff]`, which is **not** an ISO-8601 duration, so `format: "duration"` would be false. |
-| ⚠ `DateTime` | `{"type":"string","format":"date-time"}` — true only when `Kind` is not `Unspecified`, which the type does not guarantee. Noted in a `$comment`. |
-| `DateTimeOffset` | `{"type":"string","format":"date-time"}` |
-| a mapped type | its declared `{"type":…,"format":…,"pattern":…}`, inline — see [Type mappings](#type-mappings) |
-| model | `{"$ref":"#/$defs/T"}`, always |
-| model written by a `[JsonConverter]`, unmapped | `{}` — `DNS0019` |
-| enum | `{"$ref":"#/$defs/E"}`; the definition's shape is set by `EnumStyle` — see [Enums](#enums-have-two-shapes-and-they-disagree) |
-| `IReadOnlyList<T>` and friends, `T[]` | `{"type":"array","items":…}` |
-| `byte[]`, `Memory<byte>` | `{"type":"string","contentEncoding":"base64"}` |
-| `IReadOnlyDictionary<K,V>` and friends | `{"type":"object","propertyNames":…,"additionalProperties":…}` |
-| `Nullable<T>`, `T?` | see below |
-| `object`, `nint`, `Int128`, `Half`, an interface | nothing — `DNS0002` |
+| C#                                               | Schema                                                                                                                                           |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `bool`                                           | `{"type":"boolean"}`                                                                                                                             |
+| `sbyte` `byte` `short` `ushort` `int` `uint`     | `{"type":"integer","minimum":…,"maximum":…}`                                                                                                     |
+| `long`                                           | `{"type":"integer"}` — no bounds                                                                                                                 |
+| `ulong`                                          | `{"type":"integer","minimum":0}` — no upper bound                                                                                                |
+| `float` `double` `decimal`                       | `{"type":"number"}`                                                                                                                              |
+| `char`                                           | `{"type":"string","minLength":1,"maxLength":1}`                                                                                                  |
+| `string`                                         | `{"type":"string"}`                                                                                                                              |
+| `Guid`                                           | `{"type":"string","format":"uuid"}`                                                                                                              |
+| `DateOnly`                                       | `{"type":"string","format":"date"}`                                                                                                              |
+| ⚠ `TimeOnly`                                     | a pattern. Written as `hh:mm:ss[.fffffff]` with **no offset**, so it does not satisfy RFC 3339 `full-time` and `format: "time"` would be false.  |
+| ⚠ `TimeSpan`                                     | a pattern. Written as `[-][d.]hh:mm:ss[.fffffff]`, which is **not** an ISO-8601 duration, so `format: "duration"` would be false.                |
+| ⚠ `DateTime`                                     | `{"type":"string","format":"date-time"}` — true only when `Kind` is not `Unspecified`, which the type does not guarantee. Noted in a `$comment`. |
+| `DateTimeOffset`                                 | `{"type":"string","format":"date-time"}`                                                                                                         |
+| a mapped type                                    | its declared `{"type":…,"format":…,"pattern":…}`, inline — see [Type mappings](#type-mappings)                                                   |
+| model                                            | `{"$ref":"#/$defs/T"}`, always                                                                                                                   |
+| model written by a `[JsonConverter]`, unmapped   | `{}` — `DNS0019`                                                                                                                                 |
+| enum                                             | `{"$ref":"#/$defs/E"}`; the definition's shape is set by `EnumStyle` — see [Enums](#enums-have-two-shapes-and-they-disagree)                     |
+| `IReadOnlyList<T>` and friends, `T[]`            | `{"type":"array","items":…}`                                                                                                                     |
+| `byte[]`, `Memory<byte>`                         | `{"type":"string","contentEncoding":"base64"}`                                                                                                   |
+| `IReadOnlyDictionary<K,V>` and friends           | `{"type":"object","propertyNames":…,"additionalProperties":…}`                                                                                   |
+| `Nullable<T>`, `T?`                              | see below                                                                                                                                        |
+| `object`, `nint`, `Int128`, `Half`, an interface | nothing — `DNS0002`                                                                                                                              |
 
 **Integer bounds** are emitted only where the value is exactly representable as an IEEE-754 double.
 Most validators parse JSON numbers into doubles, where `"maximum": 18446744073709551615` reads back one
@@ -140,11 +142,11 @@ to strings. Either way the value keeps its `type` (`integer` or `string`), and
 `SchemaGenerationOptions.EnumStyle` (`DotNetSchemaEnumStyle` in the build) picks how the member names
 travel with it:
 
-| Style | Shape | |
-| --- | --- | --- |
-| `OneOfConstTitle` (default) | `"oneOf": [{"const": 0, "title": "Student"}, …]` | Standard JSON Schema. |
-| `EnumWithNames` | `"enum": [0, …], "x-enumNames": ["Student", …]` | The shape NSwag popularised and several code generators look for. `x-enumNames` is a vendor keyword: Draft 2020-12 treats it as an annotation, but a strict validator (Ajv's default strict mode) rejects the schema unless it is registered. |
-| `Enum` | `"enum": [0, …]` | Terser; the names are lost. |
+| Style                       | Shape                                            |                                                                                                                                                                                                                                               |
+| --------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OneOfConstTitle` (default) | `"oneOf": [{"const": 0, "title": "Student"}, …]` | Standard JSON Schema.                                                                                                                                                                                                                         |
+| `EnumWithNames`             | `"enum": [0, …], "x-enumNames": ["Student", …]`  | The shape NSwag popularised and several code generators look for. `x-enumNames` is a vendor keyword: Draft 2020-12 treats it as an annotation, but a strict validator (Ajv's default strict mode) rejects the schema unless it is registered. |
+| `Enum`                      | `"enum": [0, …]`                                 | Terser; the names are lost.                                                                                                                                                                                                                   |
 
 A name is always the **C# member name**, never the value again. That matters for a string enum renamed
 by `[JsonStringEnumMemberName]` or a naming policy: it is written `"spiral-bound"`, and only the name says
@@ -200,18 +202,18 @@ rules' wildcard, which as a prefix would also catch every consumer namespace beg
 **Standard keywords.** A selected well-known attribute is also translated, and only a selected one — denying
 `[Range]` removes its bounds along with its entry:
 
-| Attribute | Keywords | Applies to |
-| --- | --- | --- |
-| `[Description]` | `description` | model, enum, property |
-| `[DisplayName]`, `[Display(Name, Description)]` | `title`, `description` | model, enum, property |
-| `[Obsolete]` | `deprecated: true` | model, enum, property |
-| `[DefaultValue(value)]` | `default` | a scalar property; not the `(Type, string)` overload, nor an enum value |
-| `[Range]` (`int`, `double`, or `(Type, string, string)` for a numeric type) | `minimum` / `maximum`, or `exclusiveMinimum` / `exclusiveMaximum` under `MinimumIsExclusive` / `MaximumIsExclusive` | a numeric scalar |
-| `[MinLength]`, `[MaxLength]`, `[Length]` | `minLength` / `maxLength`; `minItems` / `maxItems` on an array | a string or an array, not `byte[]` (its base64 length differs) |
-| `[StringLength(max, MinimumLength)]` | `maxLength` / `minLength` | a string |
-| `[RegularExpression]` | `pattern`, anchored as `^(?:…)$` — .NET matches the whole string, JSON Schema does not | a string |
-| `[EmailAddress]`, `[Url]` | `format: email`, `format: uri` | a string |
-| `[Required]` | nothing — see `required` above | |
+| Attribute                                                                   | Keywords                                                                                                            | Applies to                                                              |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `[Description]`                                                             | `description`                                                                                                       | model, enum, property                                                   |
+| `[DisplayName]`, `[Display(Name, Description)]`                             | `title`, `description`                                                                                              | model, enum, property                                                   |
+| `[Obsolete]`                                                                | `deprecated: true`                                                                                                  | model, enum, property                                                   |
+| `[DefaultValue(value)]`                                                     | `default`                                                                                                           | a scalar property; not the `(Type, string)` overload, nor an enum value |
+| `[Range]` (`int`, `double`, or `(Type, string, string)` for a numeric type) | `minimum` / `maximum`, or `exclusiveMinimum` / `exclusiveMaximum` under `MinimumIsExclusive` / `MaximumIsExclusive` | a numeric scalar                                                        |
+| `[MinLength]`, `[MaxLength]`, `[Length]`                                    | `minLength` / `maxLength`; `minItems` / `maxItems` on an array                                                      | a string or an array, not `byte[]` (its base64 length differs)          |
+| `[StringLength(max, MinimumLength)]`                                        | `maxLength` / `minLength`                                                                                           | a string                                                                |
+| `[RegularExpression]`                                                       | `pattern`, anchored as `^(?:…)$` — .NET matches the whole string, JSON Schema does not                              | a string                                                                |
+| `[EmailAddress]`, `[Url]`                                                   | `format: email`, `format: uri`                                                                                      | a string                                                                |
+| `[Required]`                                                                | nothing — see `required` above                                                                                      |                                                                         |
 
 A bound never loosens the type's own: `[Range(1, 99)]` on a `byte` gives `minimum: 1, maximum: 99`, and
 `[Range(-1000, 1000)]` on it keeps `0` and `255`. A `pattern` or `format` that would clash with the type's
@@ -220,7 +222,7 @@ nothing and raises `DNS0015`; the entry stays in `x-decorators`. Attributes that
 an argument naming a type from an assembly the load cannot resolve — raise `DNS0014`, and that member's
 decorators are left out.
 
-These keywords describe validation the model *declares*. System.Text.Json enforces none of it — it writes
+These keywords describe validation the model _declares_. System.Text.Json enforces none of it — it writes
 a `[Range(1, 10)]` property holding `42` without complaint — so they are one of the two places the schema
 says more than "what System.Text.Json writes" (the other is [type mappings](#type-mappings)). Exclude the attribute if a schema consumer must accept everything the
 serialiser can produce.
@@ -238,7 +240,7 @@ the generator implements are:
 - **Precedence:** configuration, then the attribute, then `ScalarTable`, then classification by shape. The
   mapping check is the first thing `TypeClassifier.Classify` does, so it beats enums and collection-shaped
   types too.
-- **Lookup** is by `FullName`, or by the generic *definition's* `FullName` for a constructed generic — one
+- **Lookup** is by `FullName`, or by the generic _definition's_ `FullName` for a constructed generic — one
   mapping covers every construction. The attribute is read from the definition through `CustomAttributeData`,
   by name; the attribute type's name is taken from `typeof(DotNetSchemaTypeAttribute).FullName`, like the
   marker's.

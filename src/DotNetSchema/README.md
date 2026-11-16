@@ -2,6 +2,8 @@
 
 [![NuGet](https://img.shields.io/nuget/vpre/DotNetSchema)](https://www.nuget.org/packages/DotNetSchema/)
 
+See this page in the showroom, the documentation built by [`showroom`](https://www.npmjs.com/package/@ofzza/showroom): [ofzza.github.io/DotNetSchema/#/src/DotNetSchema/README.md](https://ofzza.github.io/DotNetSchema/#/src/DotNetSchema/README.md).
+
 Mark a data model, build the host project, get a JSON Schema.
 
 ```csharp

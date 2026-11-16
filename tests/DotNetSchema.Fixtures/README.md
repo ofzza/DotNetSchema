@@ -2,6 +2,8 @@
 
 A deliberately awkward object graph, dressed up as a school.
 
+See this page in the showroom, the documentation built by [`showroom`](https://www.npmjs.com/package/@ofzza/showroom): [ofzza.github.io/DotNetSchema/#/tests/DotNetSchema.Fixtures/README.md](https://ofzza.github.io/DotNetSchema/#/tests/DotNetSchema.Fixtures/README.md).
+
 The project exists to give the generator tests something hard to chew on: a schema that is deeply
 nested, mutually recursive, and covers every portable primitive type as a value, inside a collection and
 inside a map. `FixturesService` turns a seed number into a concrete instance of that schema,
@@ -41,27 +43,27 @@ AssessmentRecord scalars = fixtures.GenerateAssessmentRecord(42);   // scalars o
 
 ## Coverage
 
-| Requirement | Where it lives |
-| --- | --- |
-| Every primitive, portable type, once each | `ScalarBattery` — 20 properties, one per type |
-| A collection of every such type | `ScalarSeries` — 20 series plus a `byte[]` blob |
-| A map of every such type | `ScalarRegister` — 20 string-keyed maps, plus `int`-, `Guid`-, `enum`- and `DateOnly`-keyed maps |
-| A nested record | `Campus.Address`, `Assessment.Record`, and most other edges |
-| A nested collection of records | `Campus.Buildings`, `Class.Students`, `Book.Chapters`, … |
-| A nested map of records | `School.Departments` (enum-keyed), `Library.Catalogue` (enum-keyed) |
-| Four or more levels of nesting | `School → Campus → Building → Room → Class → Book → Chapter → Section → Exercise` (9) |
-| Direct recursion | `School.SisterSchools`, `Person.Mentor`, `Person.Advisees`, `Class.Prerequisites`, `Department.SubDepartments`, `Chapter.SubChapters` |
-| Indirect recursion | `Class ↔ Book`, `Class ↔ Person`, `Class ↔ Room`, `Class ↔ Assessment` |
-| Required × nullable, all four combinations, for scalars, arrays, maps, enums and model references | see [Required and nullable](#required-and-nullable) |
-| `[JsonRequired]` in place of the `required` modifier | `Book.Isbn` |
-| A string-converted enum, with a member renamed by `[JsonStringEnumMemberName]` | `Book.Binding` (`BookBinding`) |
-| Every portable type nullable, as a value, as an array item and as a map value | `NullableScalarBattery`, `NullableScalarSeries`, `NullableScalarRegister` — see [Required and nullable](#required-and-nullable) |
-| The well-known validation and description attributes, on types, enums and properties | across the graph — see [Decorators](#decorators) |
-| Every kind of attribute argument | the `Schema/Decorators/` sampler attributes, on the graph — see [Decorators](#decorators) |
-| An attribute on a positional record's constructor parameter; `[JsonRequired]`; DataAnnotations `[Required]` | `Bookmark`, outside the graph — see [Decorators](#decorators) |
-| A type described inline by `[DotNetSchemaType]`, serialised by its own converter, nullable | `Person.StudentNumber` (`StudentNumber`, a `pattern`) |
-| A generic type mapped on its definition, covering a construction | `Book.CatalogueId` (`CatalogueId<Book>`, `format: uuid`, a converter factory) |
-| A property's own format and/or pattern, `[DotNetSchemaFormat]` | `Book.Isbn` (both, nullable), `Department.CostCentre` (pattern only), `Book.Price` (format on a number), `Address.CountryCode` (format, beside `[RegularExpression]`'s pattern); `Bookmark.Tags` and `Bookmark.Anchor` outside the graph — see [Decorators](#decorators) |
+| Requirement                                                                                                 | Where it lives                                                                                                                                                                                                                                                           |
+| ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Every primitive, portable type, once each                                                                   | `ScalarBattery` — 20 properties, one per type                                                                                                                                                                                                                            |
+| A collection of every such type                                                                             | `ScalarSeries` — 20 series plus a `byte[]` blob                                                                                                                                                                                                                          |
+| A map of every such type                                                                                    | `ScalarRegister` — 20 string-keyed maps, plus `int`-, `Guid`-, `enum`- and `DateOnly`-keyed maps                                                                                                                                                                         |
+| A nested record                                                                                             | `Campus.Address`, `Assessment.Record`, and most other edges                                                                                                                                                                                                              |
+| A nested collection of records                                                                              | `Campus.Buildings`, `Class.Students`, `Book.Chapters`, …                                                                                                                                                                                                                 |
+| A nested map of records                                                                                     | `School.Departments` (enum-keyed), `Library.Catalogue` (enum-keyed)                                                                                                                                                                                                      |
+| Four or more levels of nesting                                                                              | `School → Campus → Building → Room → Class → Book → Chapter → Section → Exercise` (9)                                                                                                                                                                                    |
+| Direct recursion                                                                                            | `School.SisterSchools`, `Person.Mentor`, `Person.Advisees`, `Class.Prerequisites`, `Department.SubDepartments`, `Chapter.SubChapters`                                                                                                                                    |
+| Indirect recursion                                                                                          | `Class ↔ Book`, `Class ↔ Person`, `Class ↔ Room`, `Class ↔ Assessment`                                                                                                                                                                                                   |
+| Required × nullable, all four combinations, for scalars, arrays, maps, enums and model references           | see [Required and nullable](#required-and-nullable)                                                                                                                                                                                                                      |
+| `[JsonRequired]` in place of the `required` modifier                                                        | `Book.Isbn`                                                                                                                                                                                                                                                              |
+| A string-converted enum, with a member renamed by `[JsonStringEnumMemberName]`                              | `Book.Binding` (`BookBinding`)                                                                                                                                                                                                                                           |
+| Every portable type nullable, as a value, as an array item and as a map value                               | `NullableScalarBattery`, `NullableScalarSeries`, `NullableScalarRegister` — see [Required and nullable](#required-and-nullable)                                                                                                                                          |
+| The well-known validation and description attributes, on types, enums and properties                        | across the graph — see [Decorators](#decorators)                                                                                                                                                                                                                         |
+| Every kind of attribute argument                                                                            | the `Schema/Decorators/` sampler attributes, on the graph — see [Decorators](#decorators)                                                                                                                                                                                |
+| An attribute on a positional record's constructor parameter; `[JsonRequired]`; DataAnnotations `[Required]` | `Bookmark`, outside the graph — see [Decorators](#decorators)                                                                                                                                                                                                            |
+| A type described inline by `[DotNetSchemaType]`, serialised by its own converter, nullable                  | `Person.StudentNumber` (`StudentNumber`, a `pattern`)                                                                                                                                                                                                                    |
+| A generic type mapped on its definition, covering a construction                                            | `Book.CatalogueId` (`CatalogueId<Book>`, `format: uuid`, a converter factory)                                                                                                                                                                                            |
+| A property's own format and/or pattern, `[DotNetSchemaFormat]`                                              | `Book.Isbn` (both, nullable), `Department.CostCentre` (pattern only), `Book.Price` (format on a number), `Address.CountryCode` (format, beside `[RegularExpression]`'s pattern); `Bookmark.Tags` and `Bookmark.Anchor` outside the graph — see [Decorators](#decorators) |
 
 ### What counts as "portable"
 
@@ -74,19 +76,19 @@ JSON, in TypeScript, on a wire:
 
 Deliberately left out, and why:
 
-| Excluded | Reason |
-| --- | --- |
+| Excluded                             | Reason                                                   |
+| ------------------------------------ | -------------------------------------------------------- |
 | `nint`, `nuint`, `IntPtr`, `UIntPtr` | Width depends on the process, so no fixed representation |
-| `Int128`, `UInt128` | No portable counterpart in JSON or TypeScript |
-| `Half` | Not portable, and rounds differently across platforms |
-| `object`, `dynamic` | No schema to speak of |
+| `Int128`, `UInt128`                  | No portable counterpart in JSON or TypeScript            |
+| `Half`                               | Not portable, and rounds differently across platforms    |
+| `object`, `dynamic`                  | No schema to speak of                                    |
 
 Two conventions inside the covered set are worth calling out, because both are places round-tripping
 tends to go wrong and the fixtures are built to catch it:
 
 - every `DateTime` is generated with `Kind == Utc`, so a serialiser that silently reinterprets local time
   will produce a mismatch;
-- every `DateTimeOffset` is generated with a *non-zero* offset drawn from `-08:00 … +09:00`, so a
+- every `DateTimeOffset` is generated with a _non-zero_ offset drawn from `-08:00 … +09:00`, so a
   serialiser that normalises to UTC will lose information the fixture can detect.
 
 ---
@@ -475,13 +477,13 @@ consumer that turns the schema into types (for example
 [`tsschema`](https://www.npmjs.com/package/@ofzza/tsschema)) can therefore tell `x?: T` from
 `x: T | null`.
 
-| | Required, non-null<br/>`required T X` → `x: T` | Optional, non-null<br/>`T X { get; init; } = …` → `x?: T` | Required, nullable<br/>`required T? X` → `x: T \| null` | Optional, nullable<br/>`T? X` → `x?: T \| null` |
-| --- | --- | --- | --- | --- |
-| scalar | most | `School.EnrollmentCap`, `Department.CostCentre`, `Assessment.IsOpenBook`, … | `Campus.OpenedOn`, `Person.GradePointAverage`, `Book.Isbn`, … | `School.Motto`, `Person.Email`, `Exercise.Difficulty`, `Person.StudentNumber` (mapped), … |
-| array | most | `Person.Advisees`, `Class.Prerequisites`, `Chapter.SubChapters` | `Book.Authors` | `Class.Schedule` |
-| map | most | `Person.Grades` | `Library.Catalogue` | `Person.ContactMethods` |
-| enum | most | `Assessment.Kind` | `Room.Kind` | `Class.Term` |
-| model | most | — | `Department.Head`, `Class.Professor` | `School.Library`, `Person.Mentor`, `Person.Office`, … |
+|        | Required, non-null<br/>`required T X` → `x: T` | Optional, non-null<br/>`T X { get; init; } = …` → `x?: T`                   | Required, nullable<br/>`required T? X` → `x: T \| null`       | Optional, nullable<br/>`T? X` → `x?: T \| null`                                           |
+| ------ | ---------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| scalar | most                                           | `School.EnrollmentCap`, `Department.CostCentre`, `Assessment.IsOpenBook`, … | `Campus.OpenedOn`, `Person.GradePointAverage`, `Book.Isbn`, … | `School.Motto`, `Person.Email`, `Exercise.Difficulty`, `Person.StudentNumber` (mapped), … |
+| array  | most                                           | `Person.Advisees`, `Class.Prerequisites`, `Chapter.SubChapters`             | `Book.Authors`                                                | `Class.Schedule`                                                                          |
+| map    | most                                           | `Person.Grades`                                                             | `Library.Catalogue`                                           | `Person.ContactMethods`                                                                   |
+| enum   | most                                           | `Assessment.Kind`                                                           | `Room.Kind`                                                   | `Class.Term`                                                                              |
+| model  | most                                           | —                                                                           | `Department.Head`, `Class.Professor`                          | `School.Library`, `Person.Mentor`, `Person.Office`, …                                     |
 
 There is no optional, non-null model reference: a record with `required` members cannot be
 default-initialised, so that combination has no C# form to describe.
@@ -516,21 +518,21 @@ a generated value: every constraint below already holds for whatever `FixturesSe
 **Well-known attributes**, in the generator's default decorator list, so they appear in the documents in
 `bin/` and in the golden digests — each as an `x-decorators` entry and as the standard keywords it maps to:
 
-| Attribute | Where |
-| --- | --- |
-| `[Description]` on a type | `School`, and the enum `PersonRole` |
-| `[DisplayName]` on a type | `Campus` |
-| `[StringLength(32, MinimumLength = 2)]` | `Person.GivenName` |
-| `[MaxLength]` on a string / on an array | `Person.FamilyName` / `Book.Chapters` |
-| `[Length(0, 64)]` on an array | `Person.Classes` |
-| `[EmailAddress]` on a nullable string | `Person.Email` |
-| `[Range]` — `double`, nullable | `Person.GradePointAverage` |
-| `[Range]` — `double`, plain and with `MinimumIsExclusive` | `Address.Latitude`, `Address.Longitude` |
-| `[Range]` — `int`, narrower than the type's own bounds | `Book.Edition` |
-| `[Range(typeof(ushort), "1", "5000")]` | `Book.PageCount` |
-| `[RegularExpression]` | `Address.CountryCode` |
-| `[Display(Name, Description)]` | `Book.Isbn` |
-| `[DefaultValue]` | `Book.HasDigitalLicence` |
+| Attribute                                                                                                         | Where                                                                        |
+| ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `[Description]` on a type                                                                                         | `School`, and the enum `PersonRole`                                          |
+| `[DisplayName]` on a type                                                                                         | `Campus`                                                                     |
+| `[StringLength(32, MinimumLength = 2)]`                                                                           | `Person.GivenName`                                                           |
+| `[MaxLength]` on a string / on an array                                                                           | `Person.FamilyName` / `Book.Chapters`                                        |
+| `[Length(0, 64)]` on an array                                                                                     | `Person.Classes`                                                             |
+| `[EmailAddress]` on a nullable string                                                                             | `Person.Email`                                                               |
+| `[Range]` — `double`, nullable                                                                                    | `Person.GradePointAverage`                                                   |
+| `[Range]` — `double`, plain and with `MinimumIsExclusive`                                                         | `Address.Latitude`, `Address.Longitude`                                      |
+| `[Range]` — `int`, narrower than the type's own bounds                                                            | `Book.Edition`                                                               |
+| `[Range(typeof(ushort), "1", "5000")]`                                                                            | `Book.PageCount`                                                             |
+| `[RegularExpression]`                                                                                             | `Address.CountryCode`                                                        |
+| `[Display(Name, Description)]`                                                                                    | `Book.Isbn`                                                                  |
+| `[DefaultValue]`                                                                                                  | `Book.HasDigitalLicence`                                                     |
 | `[DotNetSchemaFormat]` — format and pattern, nullable / pattern only / on a number / beside `[RegularExpression]` | `Book.Isbn` / `Department.CostCentre` / `Book.Price` / `Address.CountryCode` |
 
 **Sampler attributes** — `SampleDecoratorAttribute` and the repeatable `SampleTagAttribute`, in
@@ -538,33 +540,33 @@ a generated value: every constraint below already holds for whatever `FixturesSe
 That namespace is deliberately outside the default list, so they never reach the documents in `bin/` or the
 goldens; a test that wants them includes `DotNetSchema.Fixtures.Schema.Decorators.*`.
 
-| Arguments | Where |
-| --- | --- |
-| none | `School` |
-| every primitive at its minimum, `float.NegativeInfinity`, `double.NaN`, a `null` string | `Person.GivenName` |
-| every primitive at its maximum, `float.MaxValue`, `double.PositiveInfinity`, a quote and a non-ASCII character | `Person.FamilyName` |
-| a constructed generic type, a single enum member, a boxed `int` | `Book.Isbn` |
-| a nested type, a `[Flags]` combination, a boxed `string` | `Book.Name` (a `$ref`) |
-| an open generic type, an undeclared enum value, a boxed `Type` | `Address.Street` |
-| an array type, the zero enum member, a boxed array | `Address.PostalCode` |
-| `int[]`, `string?[]`, `Type[]`, and a mixed `object?[]` | `Address.City` |
-| the same four, empty | `Address.CountryCode` |
-| named property and field arguments only | `Campus` |
-| repeated applications, with and without a `params` array | `School` (`SampleTag` ×3) |
-| on an enum type | `PersonRole` (`SampleTag`) |
+| Arguments                                                                                                      | Where                      |
+| -------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| none                                                                                                           | `School`                   |
+| every primitive at its minimum, `float.NegativeInfinity`, `double.NaN`, a `null` string                        | `Person.GivenName`         |
+| every primitive at its maximum, `float.MaxValue`, `double.PositiveInfinity`, a quote and a non-ASCII character | `Person.FamilyName`        |
+| a constructed generic type, a single enum member, a boxed `int`                                                | `Book.Isbn`                |
+| a nested type, a `[Flags]` combination, a boxed `string`                                                       | `Book.Name` (a `$ref`)     |
+| an open generic type, an undeclared enum value, a boxed `Type`                                                 | `Address.Street`           |
+| an array type, the zero enum member, a boxed array                                                             | `Address.PostalCode`       |
+| `int[]`, `string?[]`, `Type[]`, and a mixed `object?[]`                                                        | `Address.City`             |
+| the same four, empty                                                                                           | `Address.CountryCode`      |
+| named property and field arguments only                                                                        | `Campus`                   |
+| repeated applications, with and without a `params` array                                                       | `School` (`SampleTag` ×3)  |
+| on an enum type                                                                                                | `PersonRole` (`SampleTag`) |
 
 **`Bookmark`** (`Schema/Decorators/`) is a positional record outside the graph — `FixturesService` never
 builds one — for the cases the graph cannot carry without changing what it means:
 
-| Property | Case |
-| --- | --- |
-| `Href` | `[property: Url]` → `format: uri` |
-| `Rank` | `[Range]` written without a target, so on the constructor parameter — still read |
-| `Label` | DataAnnotations `[Required]` on an optional, nullable property — listed, but neither required nor narrowed |
-| `Note` | `[property: Obsolete]` and `[property: Description]` |
-| `Tags` | `SampleTag` on the parameter, on the property, and identically on both (listed once); a `[DotNetSchemaFormat]` pattern on the parameter, applied to the elements |
-| `Anchor` | `[DotNetSchemaFormat("uuid-v7")]` on a `Guid`, replacing its own `uuid` |
-| `Revision` | `[JsonRequired]` without the C# `required` modifier — required in the schema |
+| Property   | Case                                                                                                                                                             |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Href`     | `[property: Url]` → `format: uri`                                                                                                                                |
+| `Rank`     | `[Range]` written without a target, so on the constructor parameter — still read                                                                                 |
+| `Label`    | DataAnnotations `[Required]` on an optional, nullable property — listed, but neither required nor narrowed                                                       |
+| `Note`     | `[property: Obsolete]` and `[property: Description]`                                                                                                             |
+| `Tags`     | `SampleTag` on the parameter, on the property, and identically on both (listed once); a `[DotNetSchemaFormat]` pattern on the parameter, applied to the elements |
+| `Anchor`   | `[DotNetSchemaFormat("uuid-v7")]` on a `Guid`, replacing its own `uuid`                                                                                          |
+| `Revision` | `[JsonRequired]` without the C# `required` modifier — required in the schema                                                                                     |
 
 ---
 
@@ -591,7 +593,7 @@ defined in terms of integer arithmetic:
 
 ### Path-derived seeds
 
-Seeds are derived by *path*, not drawn from one running stream. A node's seed is a pure function of its
+Seeds are derived by _path_, not drawn from one running stream. A node's seed is a pure function of its
 parent's seed and the name — and ordinal — of the edge that reached it:
 
 ```
@@ -646,24 +648,24 @@ most `n` entity edges from the root, plus one more if the last node is a back-re
 
 ### Options and cost
 
-| Option | Default | Effect |
-| --- | --- | --- |
-| `MaxDepth` | `4` | Entity levels below the root before truncation |
-| `MinCollectionSize` / `MaxCollectionSize` | `1` / `3` | Elements per collection |
-| `MapSize` | `3` | Entries per map |
-| `SeriesLength` | `4` | Elements per scalar series (the binary blob gets `8×`) |
-| `OptionalFillRate` | `0.75` | Chance a nullable property, array item or map value is filled rather than `null` |
-| `BackReferenceDepth` | `0` | Budget granted to a back-reference |
+| Option                                    | Default   | Effect                                                                           |
+| ----------------------------------------- | --------- | -------------------------------------------------------------------------------- |
+| `MaxDepth`                                | `4`       | Entity levels below the root before truncation                                   |
+| `MinCollectionSize` / `MaxCollectionSize` | `1` / `3` | Elements per collection                                                          |
+| `MapSize`                                 | `3`       | Entries per map                                                                  |
+| `SeriesLength`                            | `4`       | Elements per scalar series (the binary blob gets `8×`)                           |
+| `OptionalFillRate`                        | `0.75`    | Chance a nullable property, array item or map value is filled rather than `null` |
+| `BackReferenceDepth`                      | `0`       | Budget granted to a back-reference                                               |
 
 Breadth is cheap; depth is not. Cost grows by roughly an order of magnitude per level, so the default
 sits at the point where a fixture is still comfortable to eyeball. Measured on `Generate(7)` with
 everything else left at its default, serialised size via `System.Text.Json`:
 
-| `MaxDepth` | Time | Serialised size |
-| --- | --- | --- |
-| 4 (default) | ~5 ms | 0.7 MiB |
-| 5 | ~60 ms | 4.5 MiB |
-| 6 | ~320 ms | 24 MiB |
+| `MaxDepth`  | Time    | Serialised size |
+| ----------- | ------- | --------------- |
+| 4 (default) | ~5 ms   | 0.7 MiB         |
+| 5           | ~60 ms  | 4.5 MiB         |
+| 6           | ~320 ms | 24 MiB          |
 
 Sizes are exact; timings are from one developer machine and are there for the order of magnitude, not
 the absolute number.
@@ -683,11 +685,11 @@ This project is a live, in-repository consumer of
 `bin/` match the generator's default options and the golden digests. Building the project writes three
 JSON Schema documents into the output directory:
 
-| Marked type | Document | What it is there to exercise |
-| --- | --- | --- |
-| `School` | `school.json` | The whole graph — 19 records, 8 enums and `System.DayOfWeek`, nine levels deep, with every cycle closed by `$ref`. |
-| `Assessment`, `AssessmentRecord` | `assessment.json` | Two entry points in one document, sharing `Class`, `Person` and `Room` with `school.json`. |
-| `ScalarRegister` | `schema.json` | The default file name, and a type defined in two documents at once. |
+| Marked type                      | Document          | What it is there to exercise                                                                                       |
+| -------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `School`                         | `school.json`     | The whole graph — 19 records, 8 enums and `System.DayOfWeek`, nine levels deep, with every cycle closed by `$ref`. |
+| `Assessment`, `AssessmentRecord` | `assessment.json` | Two entry points in one document, sharing `Class`, `Person` and `Room` with `school.json`.                         |
+| `ScalarRegister`                 | `schema.json`     | The default file name, and a type defined in two documents at once.                                                |
 
 The attributes change no generated value: a fixture graph is exactly what it was before they were added.
 That holds for the [decorators](#decorators) too. The two mapped types, `StudentNumber` and `CatalogueId<T>`,
@@ -711,7 +713,7 @@ properly would export them, and exporting them would fail this project's own bui
 
 **Record equality does not go deep.** The compiler-synthesised `Equals` on a `record` compares reference
 members with `EqualityComparer<T>.Default`, which for `IReadOnlyList<T>` and `IReadOnlyDictionary<K,V>`
-means *reference* equality. So two separately generated schools are **not** `==`, even though they are
+means _reference_ equality. So two separately generated schools are **not** `==`, even though they are
 byte-for-byte identical once serialised:
 
 ```csharp
@@ -732,13 +734,13 @@ services.AddSingleton<IFixturesService, FixturesService>();
 
 **Where to start, depending on what is under test.**
 
-| Under test | Fixture |
-| --- | --- |
-| Scalar conversion, precision, date handling | `GenerateAssessmentRecord(seed)` |
-| Cycles, depth limits, reference handling | `Generate(seed)` |
-| Collection and map handling | `Generate(seed)`, or `ScalarSeries` / `ScalarRegister` directly |
-| Throughput or payload size | `Generate(seed, new FixtureOptions { MaxDepth = 6 })` |
-| A stable corpus of unrelated inputs | `GenerateMany(seed, count)` |
+| Under test                                  | Fixture                                                         |
+| ------------------------------------------- | --------------------------------------------------------------- |
+| Scalar conversion, precision, date handling | `GenerateAssessmentRecord(seed)`                                |
+| Cycles, depth limits, reference handling    | `Generate(seed)`                                                |
+| Collection and map handling                 | `Generate(seed)`, or `ScalarSeries` / `ScalarRegister` directly |
+| Throughput or payload size                  | `Generate(seed, new FixtureOptions { MaxDepth = 6 })`           |
+| A stable corpus of unrelated inputs         | `GenerateMany(seed, count)`                                     |
 
 ---
 

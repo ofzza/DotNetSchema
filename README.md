@@ -2,6 +2,8 @@
 
 [![NuGet](https://img.shields.io/nuget/vpre/DotNetSchema)](https://www.nuget.org/packages/DotNetSchema/)
 
+See its showroom, the documentation built by [`showroom`](https://www.npmjs.com/package/@ofzza/showroom): [ofzza.github.io/DotNetSchema](https://ofzza.github.io/DotNetSchema/).
+
 A NuGet package that exports `[DotNetSchema]`-marked .NET records and classes to JSON Schema
 (Draft 2020-12) on every build of your host project.
 
@@ -25,8 +27,7 @@ public sealed record Order(Guid Id, IReadOnlyList<OrderLine> Lines);
 Requires the .NET 10 SDK for the host build, and `net10.0` or later in every project that references the
 package. Published on NuGet as [`DotNetSchema`](https://www.nuget.org/packages/DotNetSchema/).
 
-Full documentation: [src/DotNetSchema/README.md](src/DotNetSchema/README.md), also browsable in this repository's
-showroom, built by [`showroom`](https://www.npmjs.com/package/@ofzza/showroom): [ofzza.github.io/DotNetSchema](https://ofzza.github.io/DotNetSchema/).
+Full documentation: [src/DotNetSchema/README.md](src/DotNetSchema/README.md).
 
 | Path                         |                                                                                        |
 | ---------------------------- | -------------------------------------------------------------------------------------- |
