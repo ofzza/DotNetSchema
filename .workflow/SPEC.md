@@ -4,7 +4,7 @@ What DotNetSchema is and must do. Derived on 2026-11-04 from the documentation a
 
 ## What it is
 
-- A NuGet package, id **`DotNetSchema`**, MIT, [published on nuget.org](https://www.nuget.org/packages/DotNetSchema/), currently `0.1.0-alpha.4`.
+- A NuGet package, id **`DotNetSchema`**, MIT, [published on nuget.org](https://www.nuget.org/packages/DotNetSchema/), currently `0.1.0-alpha.5`.
 - It exports `[DotNetSchema]`-marked .NET records and classes (models) to **JSON Schema Draft 2020-12** documents on every build of a host project that opts in with `DotNetSchemaGenerate=true`.
 - Assemblies are read **metadata-only** (`MetadataLoadContext`): no consumer code (module initialisers, static constructors, converters) runs during an export.
 - Everything targets `net10.0`, the attribute assembly too, deliberately: hosts need the .NET 10 SDK, and every project referencing the package needs `net10.0` or later (an earlier TFM restores, then fails `using DotNetSchema;` with `CS0246`).
