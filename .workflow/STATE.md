@@ -12,6 +12,7 @@ _None._
 
 ## Waiting on me
 
+- Rotate the nuget.org API key used to push `0.1.0-alpha.6` (it was pasted into the conversation and put on a logged command line).
 - Confirm the pre-Prettier copies in `./.workflow/.temp/showroom-format/` can be deleted.
 
 - Confirm the `TODO.gitignore.md` note is resolved (`PLAN.md` › Known open issues).
@@ -33,3 +34,4 @@ _Nothing._
 - 2026-11-16: fast path: each `README.md` links to its own page in the showroom (the root one to the showroom), as `../tsschema` does; Prettier also aligned the tables of three READMEs it hadn't formatted before.
 - 2026-11-18: fast path: showroom bumped to `@ofzza/showroom` 0.1.0-alpha.3 (new trust gate): the whole-document example in `src/DotNetSchema/README.md` became a `jsonschema` showcase (with the `PersonRole` definition it referenced added); `showroom.yml` builds with `--trust` in a read-only job and deploys from a second one; `ci.yml` checks with `--trust` (`--no-trust` for fork pull requests), both checked out without credentials; README, PUBLISH, AGENTS and SPEC updated. Checkpoint: "Approve and commit".
 - 2026-11-18: release `0.1.0-alpha.6` published to nuget.org from `develop` (through `/ig-repo publish`; the only packaged change since `0.1.0-alpha.5` is the package README); pre-publish checks and consumer smoke test passed.
+- 2026-11-18: stop: the `0.1.0-alpha.6` release commit and tag landed on `master` (the branch had been switched mid-session) instead of `develop`. Resolved at your choice ("Commit on master", "Please resume"): `develop` fast-forwarded to `master`; released as a GitHub prerelease.
