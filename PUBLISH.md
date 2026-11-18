@@ -13,6 +13,8 @@ This repository's showroom ([ofzza.github.io/DotNetSchema](https://ofzza.github.
 
 The workflow runs `showroom` through `npx`, pinned by `SHOWROOM_VERSION` in `showroom.yml`; there is no `package.json` for Dependabot to bump it in, so bump it by hand, together with the version the showroom check in `ci.yml` uses.
 
+The documentation's `jsonschema` showcases (a schema drawn as a diagram, e.g. in `src/DotNetSchema/README.md` › "What the documents look like") only build when `showroom` is trusted to run the repository's code (`--trust`; without it, a showcase shows only its source). So `showroom.yml` builds with `--trust` in a job that can only read the repository, checked out without credentials, and deploys from another; `ci.yml` checks with `--trust` too, except for pull requests from forks.
+
 ## Before each publish
 
 - [ ] **`develop` is clean and in sync with `origin`** — `git status` shows nothing to commit, and `git pull` brings in nothing new.
@@ -27,7 +29,7 @@ The workflow runs `showroom` through `npx`, pinned by `SHOWROOM_VERSION` in `sho
 
 - [ ] **Every golden digest change since the last release was intended**, and its commit message says why — `git log v<previous>..develop -- tests/DotNetSchema.Generator.Tests/JsonSchemaGeneratorTests.Goldens.cs`.
 - [ ] **The documentation matches the code** — per [Keeping this file and the READMEs current](./AGENTS.md#keeping-this-file-and-the-readmes-current): the property table ("Configuring it") and the Diagnostics table in `src/DotNetSchema/README.md`, the mapping table in the Generator README, and the Arguments table in the Tool README; and the READMEs' C# samples compile.
-- [ ] **The showroom builds** — `npx --package @ofzza/showroom showroom check --showcases --quiet` reports no issues (its configuration and the documentation's links).
+- [ ] **The showroom builds** — `npx --package @ofzza/showroom showroom check --showcases --quiet --trust` reports no issues (its configuration, the documentation's links and its showcases).
 - [ ] **The new version has been chosen** following semver, and is not in the list nuget.org already has — including unlisted versions:
 
   ```sh

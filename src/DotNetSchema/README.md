@@ -110,7 +110,7 @@ The produced files are exposed as `@(DotNetSchemaOutput)` for any target ordered
 A definition bundle. Every type — the marked ones and everything they reach — is an entry in `$defs`, and
 nothing is inlined except the framework's primitives and the types you [map](#custom-type-mappings):
 
-```json
+```json showcase=jsonschema view=demo,source
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:dotnetschema:schema:school",
@@ -126,6 +126,13 @@ nothing is inlined except the framework's primitives and the types you [map](#cu
         }
       },
       "required": ["role"]
+    },
+    "PersonRole": {
+      "type": "integer",
+      "oneOf": [
+        { "const": 0, "title": "Student" },
+        { "const": 1, "title": "Professor" }
+      ]
     }
   }
 }

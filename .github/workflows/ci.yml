@@ -28,7 +28,10 @@ jobs:
       DOTNET_NOLOGO: true
       DOTNET_CLI_TELEMETRY_OPTOUT: true
     steps:
+      # No credentials left in the checkout: the showroom check below runs under --trust
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-dotnet@v6
         with:
@@ -46,15 +49,19 @@ jobs:
       - run: ./scripts/pack.sh
         shell: bash
 
-      # Checks the showroom (showroom.json and the documentation's links) before a push to master publishes it; the
-      # documentation is the same on both legs, so ubuntu alone checks it. Keep the version in step with
-      # SHOWROOM_VERSION in showroom.yml
+      # Checks the showroom (showroom.json, the documentation's links, and that its showcases build) before a push to
+      # master publishes it; the documentation is the same on both legs, so ubuntu alone checks it. Showcases only build
+      # under --trust, which runs the repository's code: never for a pull request from a fork, whose showcases are then
+      # checked by their source alone (in CI there is no terminal to ask in, so no flag would mean no trust anyway).
+      # Keep the version in step with SHOWROOM_VERSION in showroom.yml
       - uses: actions/setup-node@v7
         if: matrix.os == 'ubuntu-latest'
         with:
           node-version: 24
 
-      - run: npx --yes --package @ofzza/showroom@0.1.0-alpha.2 showroom check --showcases --quiet
+      - run: >-
+          npx --yes --package @ofzza/showroom@0.1.0-alpha.3 showroom check --showcases --quiet
+          ${{ github.event.pull_request.head.repo.fork && '--no-trust' || '--trust' }}
         if: matrix.os == 'ubuntu-latest'
 
       - uses: actions/upload-artifact@v7

@@ -47,7 +47,7 @@ Full documentation: [src/DotNetSchema/README.md](src/DotNetSchema/README.md).
 dotnet build DotNetSchema.slnx
 dotnet test DotNetSchema.slnx
 ./scripts/pack.sh
-npx --package @ofzza/showroom showroom serve   # previews the showroom; needs Node.js 22 or later
+npx --package @ofzza/showroom showroom serve --trust   # previews the showroom; needs Node.js 22 or later
 ```
 
 For reporting issues, contribution workflow and branching, see [CONTRIBUTE.md](./CONTRIBUTE.md).
